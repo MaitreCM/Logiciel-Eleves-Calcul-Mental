@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Calcul Mental</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap');
+
+:root {
+  --bg: #0f0e17;
+  --surface: #1a1929;
+  --card: #232236;
+  --card2: #2a293f;
+  --accent1: #ff6b6b;
+  --accent2: #ffd93d;
+  --accent3: #6bcb77;
+  --accent4: #4d96ff;
+  --text: #fffffe;
+  --muted: #a7a9be;
+  --add: #6bcb77;
+  --sub: #ff6b6b;
+  --mul: #ffd93d;
+  --div: #4d96ff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* ===== SCREENS ===== */
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 14px 24px;
+}
+.screen.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes fadeBack { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.screen.anim-fwd { animation: fadeIn 0.22s ease; }
+.screen.anim-back { animation: fadeBack 0.22s ease; }
+
+.app-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.7rem, 5.5vw, 2.6rem);
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent2), var(--accent1));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+.app-sub {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.section-lbl {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  width: 100%;
+}
+.btn-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 0;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-back:hover { color: var(--text); }
+
+/* ========== SCREEN 1: CATEGORIES ========== */
+#s1 {
+  justify-content: center;
+}
+#s1 .cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 8px;
+}
+
+.cat-card {
+  background: var(--card);
+  border-radius: 22px;
+  padding: 28px 10px 22px;
+  text-align: center;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  aspect-ratio: 1;
+  justify-content: center;
+}
+.cat-card:hover { transform: translateY(-4px); }
+.cat-card[data-cat="add"] { --clr: var(--add); }
+.cat-card[data-cat="sub"] { --clr: var(--sub); }
+.cat-card[data-cat="mul"] { --clr: var(--mul); }
+.cat-card[data-cat="div"] { --clr: var(--div); }
+.cat-card .cat-icon { font-size: 3.4rem; line-height: 1; }
+.cat-card .cat-name { font-size: 1rem; font-weight: 800; color: var(--clr); }
+.cat-card .cat-count { font-size: 0.7rem; color: var(--muted); }
+
+/* ========== SCREEN 2: TYPES (2 colonnes, sans scroll) ========== */
+#s2 {
+  justify-content: flex-start;
+}
+
+/* Header with cat badge */
+.cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border-radius: 50px;
+  padding: 6px 16px 6px 10px;
+  margin-bottom: 14px;
+  border: 2px solid var(--clr-active, var(--accent4));
+}
+.cat-badge-icon { font-size: 1.2rem; }
+.cat-badge-name { font-size: 0.85rem; font-weight: 800; color: var(--clr-active, var(--accent4)); }
+
+/* 2-column grid of type cards — auto height, no scroll */
+.type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  width: 100%;
+}
+
+.type-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 8px 11px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.13s;
+  display: flex;
+  align-items: center;
+}
+.type-card:hover { background: var(--card2); }
+.type-card.selected {
+  border-color: var(--clr-active, var(--accent4));
+  background: var(--card2);
+}
+.type-card-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+.type-card.selected .type-card-name { color: var(--clr-active, var(--accent4)); }
+
+/* ========== SCREEN 3: LEVEL + SETTINGS ========== */
+.level-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+.lvl-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 6px;
+  text-align: center;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  transition: all 0.14s;
+}
+.lvl-card:hover { transform: translateY(-2px); }
+.lvl-card[data-lv="1"] { --clr: var(--accent3); }
+.lvl-card[data-lv="2"] { --clr: var(--accent4); }
+.lvl-card[data-lv="3"] { --clr: var(--accent2); }
+.lvl-card[data-lv="4"] { --clr: var(--accent1); }
+.lvl-card.selected { border-color: var(--clr); box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr) 18%, transparent); }
+.lvl-icon { font-size: 1.5rem; margin-bottom: 3px; }
+.lvl-name { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; color: var(--clr); }
+
+.settings-box {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px 18px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.settings-row { margin-bottom: 14px; }
+.settings-row:last-child { margin-bottom: 0; }
+.settings-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip-btn {
+  padding: 7px 12px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.13s;
+}
+.chip-btn:hover { background: var(--card2); }
+.chip-btn.selected { border-color: var(--accent2); color: var(--accent2); }
+.custom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.custom-row label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.custom-row input {
+  width: 64px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 2px solid var(--surface);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.custom-row input:focus { border-color: var(--accent2); }
+
+/* ========== BUTTONS ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 28px;
+  border-radius: 50px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  color: #1a0a00;
+  width: 100%;
+  padding: 15px 32px;
+  font-size: 1.05rem;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,107,107,0.28); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-secondary {
+  background: var(--card);
+  color: var(--muted);
+  border: 2px solid var(--surface);
+  font-size: 0.88rem;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+/* ========== GAME SCREEN ========== */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 12px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.g-chip {
+  background: var(--card);
+  border-radius: 50px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.g-chip span { color: var(--text); }
+.progress-bar {
+  width: 100%;
+  height: 5px;
+  background: var(--surface);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent4), var(--accent3));
+  transition: width 0.4s ease;
+}
+.timer-wrap {
+  position: relative;
+  width: 96px; height: 96px;
+  margin: 0 auto 18px;
+}
+.timer-svg { transform: rotate(-90deg); }
+.timer-bg { fill: none; stroke: var(--surface); stroke-width: 7; }
+.timer-arc { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke 0.3s; }
+.timer-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 2rem;
+}
+.question-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 26px 18px;
+  text-align: center;
+  width: 100%;
+  margin-bottom: 16px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.question-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.question-text {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.7rem, 7vw, 3rem);
+  line-height: 1.15;
+}
+.question-hint { font-size: 0.78rem; color: var(--muted); margin-top: 7px; }
+
+.answer-wrap { width: 100%; margin-bottom: 12px; }
+.answer-input {
+  width: 100%;
+  padding: 15px 16px;
+  border-radius: 12px;
+  border: 2.5px solid var(--surface);
+  background: var(--card);
+  color: var(--text);
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.9rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.answer-input:focus { border-color: var(--accent4); }
+.answer-input.correct { border-color: var(--accent3); background: color-mix(in srgb, var(--accent3) 10%, var(--card)); }
+.answer-input.wrong { border-color: var(--accent1); background: color-mix(in srgb, var(--accent1) 10%, var(--card)); animation: shake 0.3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+
+.dual-answer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+.dual-answer .answer-input { font-size: 1.5rem; }
+.dual-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); text-align: center; margin-bottom: 3px; }
+
+/* Numpad */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+.np-btn {
+  padding: 13px;
+  border-radius: 11px;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.11s;
+}
+.np-btn:active { transform: scale(0.9); background: var(--surface); }
+.np-btn.sp { background: var(--surface); font-size: 0.88rem; color: var(--muted); font-family: 'Nunito', sans-serif; font-weight: 700; }
+.np-btn.ok { background: linear-gradient(135deg, var(--accent4), var(--accent3)); color: #001a00; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.92rem; grid-column: span 3; padding: 14px; }
+.active-input-label { font-size: 0.68rem; color: var(--accent2); text-align: center; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+@media (min-width: 480px) {
+  .numpad { display: none; }
+  .active-input-label { display: none; }
+  .answer-input { pointer-events: auto; }
+}
+@media (max-width: 479px) {
+  .answer-input { pointer-events: none; caret-color: transparent; }
+}
+
+/* Results */
+.result-hero { text-align: center; margin: 10px 0 18px; }
+.result-emoji { font-size: 3.2rem; }
+.result-score { font-family: 'Fredoka One', cursive; font-size: clamp(3rem, 11vw, 5.5rem); line-height: 1; }
+.result-label { font-size: 0.95rem; color: var(--muted); margin-top: 3px; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; margin-bottom: 18px; }
+@media (min-width: 440px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat-card { background: var(--card); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.stat-val { font-size: 1.6rem; font-weight: 800; }
+.stat-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.review-list { width: 100%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; max-height: 280px; overflow-y: auto; }
+.review-item { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 9px; padding: 9px 13px; font-size: 0.88rem; gap: 8px; }
+.review-q { font-weight: 700; flex: 1; }
+.review-given { font-weight: 800; }
+.correct-a { color: var(--accent3); }
+.wrong-a { color: var(--accent1); text-decoration: line-through; }
+.review-ans { color: var(--accent3); font-size: 0.78rem; }
+.review-icon { font-size: 1rem; flex-shrink: 0; }
+.btn-row { display: flex; gap: 10px; width: 100%; }
+.btn-row .btn { flex: 1; }
+
+/* Feedback */
+.feedback-pop {
+  position: fixed; top: 40%; left: 50%;
+  transform: translate(-50%,-50%) scale(0);
+  font-size: 4.5rem;
+  pointer-events: none; z-index: 99;
+  transition: transform 0.14s, opacity 0.28s;
+  opacity: 0;
+}
+.feedback-pop.show { transform: translate(-50%,-60%) scale(1); opacity: 1; }
+.feedback-pop.hide { transform: translate(-50%,-80%) scale(0.8); opacity: 0; }
+
+body.cat-add { --clr-active: var(--add); }
+body.cat-sub { --clr-active: var(--sub); }
+body.cat-mul { --clr-active: var(--mul); }
+body.cat-div { --clr-active: var(--div); }
+</style>
+</head>
+<body>
+
+<div class="feedback-pop" id="feedbackPop"></div>
+
+<!-- ====================================================
+     ÉCRAN 1 : CHOIX DE L'OPÉRATION
+===================================================== -->
+<div class="screen active" id="s1">
+  <div class="app-title">🧮 Calcul Mental</div>
+  <p class="app-sub">Choisis une opération</p>
+
+  <div class="cat-grid">
+    <div class="cat-card" data-cat="add" onclick="selectCat('add')">
+      <span class="cat-icon">➕</span>
+      <div class="cat-name">Addition</div>
+      <div class="cat-count">13 types</div>
+    </div>
+    <div class="cat-card" data-cat="sub" onclick="selectCat('sub')">
+      <span class="cat-icon">➖</span>
+      <div class="cat-name">Soustraction</div>
+      <div class="cat-count">11 types</div>
+    </div>
+    <div class="cat-card" data-cat="mul" onclick="selectCat('mul')">
+      <span class="cat-icon">✖️</span>
+      <div class="cat-name">Multiplication</div>
+      <div class="cat-count">7 types</div>
+    </div>
+    <div class="cat-card" data-cat="div" onclick="selectCat('div')">
+      <span class="cat-icon">➗</span>
+      <div class="cat-name">Division</div>
+      <div class="cat-count">7 types</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================
+     ÉCRAN 2 : CHOIX DU TYPE (2 colonnes)
+===================================================== -->
+<div class="screen" id="s2">
+  <button class="btn-back" onclick="nav(1,'back')">← Retour</button>
+  <div class="cat-badge" id="catBadge">
+    <span class="cat-badge-icon" id="catBadgeIcon">➕</span>
+    <span class="cat-badge-name" id="catBadgeName">Addition</span>
+  </div>
+  <div class="section-lbl">Choisis le type de calcul</div>
+  <div class="type-grid" id="typeGrid"></div>
+</div>
+
+<!-- ====================================================
+     ÉCRAN 3 : NIVEAU + RÉGLAGES
+===================================================== -->
+<div class="screen" id="s3">
+  <button class="btn-back" onclick="nav(2,'back')">← Retour</button>
+  <div class="app-title" style="font-size:1.5rem; margin-bottom:16px;">Paramètres</div>
+
+  <div class="section-lbl">Niveau de difficulté</div>
+  <div class="level-row">
+    <div class="lvl-card" data-lv="1" onclick="selectLevel(1)">
+      <div class="lvl-icon">🌱</div>
+      <div class="lvl-name">Débutant</div>
+    </div>
+    <div class="lvl-card" data-lv="2" onclick="selectLevel(2)">
+      <div class="lvl-icon">⭐</div>
+      <div class="lvl-name">Intermédiaire</div>
+    </div>
+    <div class="lvl-card" data-lv="3" onclick="selectLevel(3)">
+      <div class="lvl-icon">🔥</div>
+      <div class="lvl-name">Confirmé</div>
+    </div>
+    <div class="lvl-card" data-lv="4" onclick="selectLevel(4)">
+      <div class="lvl-icon">🏆</div>
+      <div class="lvl-name">Expert</div>
+    </div>
+  </div>
+
+  <div class="settings-box">
+    <div class="settings-row">
+      <div class="settings-label">⏱ Durée par question</div>
+      <div class="chip-row" id="timeChips">
+        <button class="chip-btn" onclick="setTime(5)">5 s</button>
+        <button class="chip-btn selected" onclick="setTime(10)">10 s</button>
+        <button class="chip-btn" onclick="setTime(20)">20 s</button>
+        <button class="chip-btn" onclick="setTime(30)">30 s</button>
+        <button class="chip-btn" onclick="setTime(45)">45 s</button>
+        <button class="chip-btn" onclick="setTime(60)">1 min</button>
+        <button class="chip-btn" onclick="setTime(75)">1 min 15</button>
+        <button class="chip-btn" onclick="setTime(90)">1 min 30</button>
+      </div>
+      <div class="custom-row">
+        <label>Autre :</label>
+        <input type="number" id="customTime" min="3" max="120" placeholder="sec" onchange="setCustomTime(this.value)">
+        <label>s</label>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-label">📝 Nombre de questions</div>
+      <div class="chip-row" id="nbChips">
+        <button class="chip-btn" onclick="setNbQ(5)">5</button>
+        <button class="chip-btn selected" onclick="setNbQ(10)">10</button>
+        <button class="chip-btn" onclick="setNbQ(15)">15</button>
+        <button class="chip-btn" onclick="setNbQ(20)">20</button>
+        <button class="chip-btn" onclick="setNbQ(30)">30</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="startBtn" onclick="startGame()">▶ Commencer !</button>
+</div>
+
+<!-- ====================================================
+     ÉCRAN 4 : JEU
+===================================================== -->
+<div class="screen" id="s4">
+  <div class="game-header">
+    <div class="g-chip" id="gCatLabel">Addition</div>
+    <div class="g-chip">Q <span id="gQNum">1</span>/<span id="gQTotal">10</span></div>
+    <div class="g-chip">✅ <span id="gScore">0</span></div>
+    <div class="g-chip" id="gLvLabel">Débutant</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div class="timer-wrap">
+    <svg class="timer-svg" width="96" height="96" viewBox="0 0 96 96">
+      <circle class="timer-bg" cx="48" cy="48" r="41"/>
+      <circle class="timer-arc" id="timerArc" cx="48" cy="48" r="41"
+        stroke-dasharray="257.6" stroke-dashoffset="0" stroke="var(--accent4)"/>
+    </svg>
+    <div class="timer-text" id="timerText">10</div>
+  </div>
+
+  <div class="question-card">
+    <div class="question-label" id="qLabel">Question 1</div>
+    <div class="question-text" id="qText">?</div>
+    <div class="question-hint" id="qHint"></div>
+  </div>
+
+  <div id="normalAnswer">
+    <div class="answer-wrap">
+      <input type="text" inputmode="decimal" class="answer-input" id="answerInput"
+        placeholder="?" autocomplete="off" onkeydown="handleKey(event)">
+    </div>
+  </div>
+
+  <div id="dualAnswer" style="display:none;">
+    <div class="dual-answer">
+      <div>
+        <div class="dual-label">Quotient</div>
+        <input type="text" inputmode="numeric" class="answer-input" id="ansQ"
+          placeholder="?" autocomplete="off" onkeydown="handleKeyDual(event,'q')">
+      </div>
+      <div>
+        <div class="dual-label">Reste</div>
+        <input type="text" inputmode="numeric" class="answer-input" id="ansR"
+          placeholder="?" autocomplete="off" onkeydown="handleKeyDual(event,'r')">
+      </div>
+    </div>
+  </div>
+
+  <div class="active-input-label" id="activeInputLabel" style="display:none;"></div>
+
+  <div class="numpad" id="numpad">
+    <button class="np-btn" onclick="np('7')">7</button>
+    <button class="np-btn" onclick="np('8')">8</button>
+    <button class="np-btn" onclick="np('9')">9</button>
+    <button class="np-btn" onclick="np('4')">4</button>
+    <button class="np-btn" onclick="np('5')">5</button>
+    <button class="np-btn" onclick="np('6')">6</button>
+    <button class="np-btn" onclick="np('1')">1</button>
+    <button class="np-btn" onclick="np('2')">2</button>
+    <button class="np-btn" onclick="np('3')">3</button>
+    <button class="np-btn sp" onclick="np('-')">+/−</button>
+    <button class="np-btn" onclick="np('0')">0</button>
+    <button class="np-btn sp" onclick="np('del')">⌫</button>
+    <button class="np-btn sp" id="dotBtn" onclick="np('.')">·</button>
+    <button class="np-btn sp" id="tabBtn" onclick="np('tab')" style="display:none;">Tab→</button>
+    <button class="np-btn ok" onclick="submitAnswer()">✔ Valider</button>
+  </div>
+
+  <button class="btn btn-secondary" onclick="quitGame()" style="margin-top:8px;width:100%;">✕ Quitter</button>
+</div>
+
+<!-- ====================================================
+     ÉCRAN 5 : RÉSULTATS
+===================================================== -->
+<div class="screen" id="s5">
+  <div class="result-hero">
+    <div class="result-emoji" id="resEmoji">🎉</div>
+    <div class="result-score" id="resScore" style="color:var(--accent3)">0</div>
+    <div class="result-label" id="resLabel">sur 10</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent3)" id="stCorrect">0</div><div class="stat-lbl">Correctes</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent1)" id="stWrong">0</div><div class="stat-lbl">Erreurs</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent2)" id="stSkip">0</div><div class="stat-lbl">Passées</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent4)" id="stPct">0%</div><div class="stat-lbl">Réussite</div></div>
+  </div>
+  <div class="section-lbl">Détail des réponses</div>
+  <div class="review-list" id="reviewList"></div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="nav(1,'back')">🏠 Menu</button>
+    <button class="btn btn-primary" onclick="startGame()">🔄 Rejouer</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// TYPES DATA
+// ================================================================
+const TYPES = {
+  add: [
+    { id:'add_all_int',   name:'Additions variées (entiers)',           sub:null },
+    { id:'add_all_dec',   name:'Additions variées (décimaux)',          sub:null },
+    { id:'add_2_int',     name:'2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
+    { id:'add_complement',name:'Trouver un complément (à 10, 100 ou 1000)', sub:['à 10','à 100','à 1000'] },
+    { id:'add_maison',    name:'Maisons des nombres (de 3 à 10)',        sub:null },
+    { id:'add_mult10',    name:'Additionner des multiples de 10',        sub:null },
+    { id:'add_mult5_10',  name:'Additionner des multiples de 5 ou 10', sub:null },
+    { id:'add_fin9',      name:'Additionner un nombre finissant par 9', sub:null },
+    { id:'add_fin89',     name:'Additionner un nombre finissant par 8 ou 9', sub:null },
+    { id:'add_3_int',     name:'Additionner 3 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
+    { id:'add_4_int',     name:'Additionner 4 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
+    { id:'add_int_dec',   name:'Additionner un entier et un décimal',   sub:null },
+    { id:'add_dec_dec',   name:'Additionner des décimaux',              sub:null },
+  ],
+  sub: [
+    { id:'sub_all_int',   name:'Soustractions variées (entiers)',       sub:null },
+    { id:'sub_all_dec',   name:'Soustractions variées (décimaux)',      sub:null },
+    { id:'sub_2_int',     name:'2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
+    { id:'sub_mult10',    name:'Soustraire des multiples de 10',        sub:null },
+    { id:'sub_mult5_10',  name:'Soustraire des multiples de 5 ou 10',  sub:null },
+    { id:'sub_fin9',      name:'Soustraire un nombre finissant par 9',  sub:null },
+    { id:'sub_fin89',     name:'Soustraire un nombre finissant par 8 ou 9', sub:null },
+    { id:'sub_3_int',     name:'Soustraire 3 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
+    { id:'sub_4_int',     name:'Soustraire 4 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
+    { id:'sub_int_dec',   name:'Soustraire un entier et un décimal',    sub:null },
+    { id:'sub_dec_dec',   name:'Soustraire des décimaux',               sub:null },
+  ],
+  mul: [
+    { id:'mul_all_int',   name:'Multiplications variées (entiers)',     sub:null },
+    { id:'mul_all_dec',   name:'Multiplications variées (décimaux)',    sub:null },
+    { id:'mul_tables',    name:'Tables de multiplication (×2 à ×9)',   sub:['×2','×3','×4','×5','×6','×7','×8','×9','Toutes'] },
+    { id:'mul_10_100',    name:'Multiplier par 10, 100 ou 1000',        sub:['× 10','× 100','× 1000','Au hasard'] },
+    { id:'mul_par2',      name:'Multiplier par 2',                      sub:null },
+    { id:'mul_par4',      name:'Multiplier par 4',                      sub:null },
+    { id:'mul_dec_int',   name:'Multiplier un décimal par un entier',   sub:null },
+  ],
+  div: [
+    { id:'div_all_int',   name:'Divisions variées (entiers)',           sub:null },
+    { id:'div_all_dec',   name:'Divisions variées (décimaux)',          sub:null },
+    { id:'div_pair_2',    name:'Diviser un nombre pair par 2',          sub:null },
+    { id:'div_impair_2',  name:'Diviser par 2 (pair ou impair)',        sub:null },
+    { id:'div_248_ent',   name:'Diviser par 2, 4 ou 8 (résultat entier)', sub:null },
+    { id:'div_248_dec',   name:'Diviser par 2, 4 ou 8 (avec décimaux)', sub:null },
+    { id:'div_quot_rest', name:'Quotient et reste (division euclidienne)', sub:null, dual:true },
+  ],
+};
+
+const CAT_ICONS = { add:'➕', sub:'➖', mul:'✖️', div:'➗' };
+const CAT_NAMES = { add:'Addition', sub:'Soustraction', mul:'Multiplication', div:'Division' };
+
+// ================================================================
+// STATE
+// ================================================================
+let selCat=null, selTypeId=null, selSubIdx=0, selLevel=null;
+let timePerQ=10, nbQ=10;
+let questions=[], curQ=0, score=0, answers=[];
+let timer=null, timeLeft=0, answered=false, isDual=false, dualFocus='q';
+const CIRC=257.6;
+
+// ================================================================
+// AUDIO
+// ================================================================
+let actx=null;
+function getAC(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+function beep(f,d,type='sine',v=0.32){
+  try{const a=getAC();const o=a.createOscillator();const g=a.createGain();
+  o.connect(g);g.connect(a.destination);o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(v,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);
+  o.start();o.stop(a.currentTime+d);}catch(e){}}
+const bStart=()=>{beep(880,0.1);setTimeout(()=>beep(1047,0.12),120);}
+const bEnd=()=>{beep(523,0.07,'square',0.18);setTimeout(()=>beep(392,0.07,'square',0.18),90);setTimeout(()=>beep(330,0.18,'square',0.14),180);}
+const bOk=()=>{beep(1047,0.06);setTimeout(()=>beep(1319,0.13),65);}
+const bWrong=()=>beep(220,0.18,'sawtooth',0.18);
+const bTick=()=>beep(660,0.04,'sine',0.1);
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function nav(screenNum, dir='fwd') {
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active','anim-fwd','anim-back');});
+  const s=document.getElementById('s'+screenNum);
+  s.classList.add('active', dir==='back'?'anim-back':'anim-fwd');
+  window.scrollTo(0,0);
+}
+
+// ================================================================
+// SCREEN 1 → 2 : select category
+// ================================================================
+function selectCat(cat) {
+  selCat=cat; selTypeId=null; selSubIdx=0;
+  document.body.className='cat-'+cat;
+
+  // update badge
+  document.getElementById('catBadgeIcon').textContent=CAT_ICONS[cat];
+  document.getElementById('catBadgeName').textContent=CAT_NAMES[cat];
+  document.getElementById('catBadge').style.setProperty('--clr-active','var(--'+cat+')');
+
+  // render types grid
+  renderTypeGrid(cat);
+  nav(2,'fwd');
+}
+
+function renderTypeGrid(cat) {
+  const grid=document.getElementById('typeGrid');
+  grid.innerHTML='';
+  TYPES[cat].forEach(t=>{
+    const div=document.createElement('div');
+    div.className='type-card';
+    div.dataset.tid=t.id;
+    const nameEl=document.createElement('div');
+    nameEl.className='type-card-name';
+    // flatten name (no line breaks in display)
+    nameEl.textContent=t.name.replace(/\n/g,' ');
+    div.appendChild(nameEl);
+    div.onclick=()=>selectType(t.id);
+    grid.appendChild(div);
+  });
+}
+
+function selectType(tid) {
+  selTypeId=tid; selSubIdx=0;
+  document.querySelectorAll('.type-card').forEach(el=>{
+    el.classList.toggle('selected',el.dataset.tid===tid);
+  });
+  const t=TYPES[selCat].find(x=>x.id===tid);
+  if(t && t.sub && t.sub.length>0){
+    showSubModal(t);
+  } else {
+    setTimeout(()=>nav(3,'fwd'),140);
+  }
+}
+
+function showSubModal(t){
+  const old=document.getElementById('subModal');
+  if(old)old.remove();
+  const modal=document.createElement('div');
+  modal.id='subModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;';
+  const box=document.createElement('div');
+  box.style.cssText='background:var(--card);border-radius:20px;padding:22px 18px;width:100%;max-width:360px;border:2px solid var(--clr-active,var(--accent4));';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:14px;';
+  title.textContent='Choisir la variante';
+  box.appendChild(title);
+  const grid=document.createElement('div');
+  grid.style.cssText='display:flex;flex-wrap:wrap;gap:8px;';
+  t.sub.forEach((s,i)=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='padding:10px 16px;border-radius:50px;border:2px solid var(--surface);background:var(--surface);color:var(--text);font-family:Nunito,sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;';
+    btn.textContent=s;
+    btn.onclick=()=>{selSubIdx=i;modal.remove();setTimeout(()=>nav(3,'fwd'),100);};
+    grid.appendChild(btn);
+  });
+  box.appendChild(grid);
+  const cancel=document.createElement('button');
+  cancel.style.cssText='margin-top:14px;width:100%;padding:10px;border-radius:50px;border:none;background:var(--surface);color:var(--muted);font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;';
+  cancel.textContent='← Annuler';
+  cancel.onclick=()=>modal.remove();
+  box.appendChild(cancel);
+  modal.appendChild(box);
+  modal.onclick=(e)=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+// ================================================================
+// SCREEN 3 : level + settings
+// ================================================================
+function selectLevel(lv){
+  selLevel=lv;
+  document.querySelectorAll('.lvl-card').forEach(c=>c.classList.toggle('selected',parseInt(c.dataset.lv)===lv));
+}
+function setTime(n){
+  timePerQ=n;
+  const vals=[5,10,20,30,45,60,75,90];
+  document.querySelectorAll('#timeChips .chip-btn').forEach((b,i)=>b.classList.toggle('selected',vals[i]===n));
+  document.getElementById('customTime').value='';
+}
+function setCustomTime(v){
+  v=Math.max(3,Math.min(120,parseInt(v)||10));
+  timePerQ=v;
+  document.querySelectorAll('#timeChips .chip-btn').forEach(b=>b.classList.remove('selected'));
+}
+function setNbQ(n){
+  nbQ=n;
+  document.querySelectorAll('#nbChips .chip-btn').forEach((b,i)=>b.classList.toggle('selected',[5,10,15,20,30][i]===n));
+}
+
+// ================================================================
+// QUESTION GENERATORS
+// ================================================================
+function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function rd1(a,b){return Math.round((Math.random()*(b-a)+a)*10)/10;}
+function rd2(a,b){return Math.round((Math.random()*(b-a)+a)*100)/100;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function fmt(n){return Number.isInteger(n)?String(n):String(n).replace('.',',');}
+function parseAns(s){return parseFloat(s.replace(',','.'));}
+
+function genQ(typeId,subIdx,lv){
+  let text='',ans=0,ans2=null,hint='',dual=false,allowDec=false;
+
+  switch(typeId){
+    case 'add_all_int':{
+      const mx=[50,100,300,999][lv-1];
+      const t=r(1,4);
+      if(t===1){let a=r(1,mx),b=r(1,mx);text=`${a} + ${b}`;ans=a+b;}
+      else if(t===2){let a=r(1,mx),b=r(1,mx),c=r(1,50);text=`${a} + ${b} + ${c}`;ans=a+b+c;}
+      else if(t===3){let a=r(1,Math.min(mx,99)),b=r(1,Math.min(mx,99)),c=r(1,Math.min(mx,99));text=`${a} + ${b} + ${c}`;ans=a+b+c;}
+      else{let a=r(1,mx),b=r(1,50);text=`${a} + ${b}`;ans=a+b;}
+      break;}
+    case 'add_all_dec':{
+      allowDec=true;
+      const t=r(1,3);
+      const mx=[5,10,50,100][lv-1];
+      if(t===1){let a=r(1,mx),b=rd1(0.1,9.9);text=`${a} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else if(t===2){let a=rd1(0.1,9.9),b=rd1(0.1,9.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else{let a=rd2(0.01,9.99),b=rd2(0.01,9.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      break;}
+    case 'add_2_int':{
+      const mx=[9,99,999][subIdx];
+      const lvMx=[Math.min(mx,9),Math.min(mx,50),Math.min(mx,300),mx][lv-1];
+      let a=r(1,lvMx),b=r(1,lvMx);
+      text=`${a} + ${b}`;ans=a+b;break;}
+    case 'add_complement':{
+      const tgt=[10,100,1000][subIdx];
+      let a;
+      if(tgt===10)a=r(1,9);
+      else if(tgt===100){const m=[10,5,1,1][lv-1];a=r(m,100-m);if(lv===1)a=r(1,9)*10;else if(lv===2)a=r(1,19)*5;}
+      else{if(lv===1)a=r(1,9)*100;else if(lv===2)a=r(1,19)*50;else a=r(10,990);}
+      a=Math.max(1,Math.min(a,tgt-1));
+      if(r(0,1)===0){text=`? + ${a} = ${tgt}`;}else{text=`${a} + ? = ${tgt}`;}
+      ans=tgt-a;break;}
+    case 'add_maison':{
+      // Toutes les maisons (3 à 10) au hasard selon le niveau
+      const allTgts=[3,4,5,6,7,8,9,10];
+      // Niveau 1 : maisons 3-6 / Niveau 2 : 3-8 / Niveau 3 : 3-9 / Niveau 4 : 3-10
+      const maxTgt=[6,8,9,10][lv-1];
+      const availTgts=allTgts.filter(t=>t<=maxTgt);
+      const tgt=pick(availTgts);
+      const a=r(0,tgt);
+      if(r(0,1)===0){text=`${a} + ? = ${tgt}`;ans=tgt-a;}
+      else{text=`? + ${tgt-a} = ${tgt}`;ans=a;}
+      break;}
+    case 'add_mult10':{
+      const mx=[5,10,20,50][lv-1];
+      let a=r(1,mx)*10,b=r(1,mx)*10;
+      text=`${a} + ${b}`;ans=a+b;break;}
+    case 'add_mult5_10':{
+      const mx=[4,8,16,30][lv-1];
+      let a=r(1,mx)*5,b=r(1,mx)*5;
+      text=`${a} + ${b}`;ans=a+b;break;}
+    case 'add_fin9':{
+      const mx=[10,20,50,100][lv-1];
+      let a=r(1,mx),b=r(1,mx)*10-1;if(b<1)b=9;
+      text=`${a} + ${b}`;ans=a+b;break;}
+    case 'add_fin89':{
+      const mx=[10,20,50,100][lv-1];
+      let a=r(1,mx),b=r(1,mx)*10-r(1,2);if(b<1)b=8;
+      text=`${a} + ${b}`;ans=a+b;break;}
+    case 'add_3_int':{
+      const mx=[9,99,999][subIdx];
+      const m=[Math.min(mx,9),Math.min(mx,30),Math.min(mx,150),mx][lv-1];
+      let a=r(1,m),b=r(1,m),c=r(1,m);
+      text=`${a} + ${b} + ${c}`;ans=a+b+c;break;}
+    case 'add_4_int':{
+      const mx=[9,99,999][subIdx];
+      const m=[Math.min(mx,9),Math.min(mx,20),Math.min(mx,75),mx][lv-1];
+      let a=r(1,m),b=r(1,m),c=r(1,m),d=r(1,m);
+      text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;break;}
+    case 'add_int_dec':{
+      allowDec=true;
+      const mx=[10,20,50,100][lv-1];
+      let a=r(1,mx),b=rd1(0.1,9.9);
+      text=`${a} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;break;}
+    case 'add_dec_dec':{
+      allowDec=true;
+      if(lv===1){let a=rd1(0.1,4.9),b=rd1(0.1,4.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else if(lv===2){let a=rd1(0.1,9.9),b=rd1(0.1,9.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else if(lv===3){let a=rd2(0.01,9.99),b=rd2(0.01,9.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      else{let a=rd2(0.01,99.99),b=rd2(0.01,99.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      break;}
+
+    case 'sub_all_int':{
+      const mx=[20,100,500,999][lv-1];
+      let a=r(2,mx),b=r(1,a);
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_all_dec':{
+      allowDec=true;
+      const mx=[10,20,50,100][lv-1];
+      const t=r(1,3);
+      if(t===1){let a=r(2,mx),b=rd1(0.1,Math.min(a-0.1,9.9));text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(t===2){let a=rd1(0.2,9.9),b=rd1(0.1,a-0.05);if(b>=a)b=a-0.1;text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else{let a=rd2(0.05,9.99),b=rd2(0.01,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      break;}
+    case 'sub_2_int':{
+      const mx=[9,99,999][subIdx];
+      const m=[Math.min(mx,9),Math.min(mx,50),Math.min(mx,300),mx][lv-1];
+      let a=r(2,m),b=r(1,a);
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_mult10':{
+      const mx=[5,10,20,50][lv-1];
+      let b=r(1,mx)*10,a=b+r(1,mx)*10;
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_mult5_10':{
+      const mx=[4,8,16,30][lv-1];
+      let b=r(1,mx)*5,a=b+r(1,mx)*5;
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_fin9':{
+      const mx=[10,20,50,100][lv-1];
+      let b=r(1,mx)*10-1;if(b<1)b=9;
+      let a=b+r(1,mx);
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_fin89':{
+      const mx=[10,20,50,100][lv-1];
+      let b=r(1,mx)*10-r(1,2);if(b<1)b=8;
+      let a=b+r(1,mx);
+      text=`${a} − ${b}`;ans=a-b;break;}
+    case 'sub_3_int':{
+      const mx=[9,99,999][subIdx];
+      const m=[Math.min(mx,9),Math.min(mx,30),Math.min(mx,100),mx][lv-1];
+      let a=r(4,m*2||10),b=r(1,Math.floor(a/3)),c=r(1,Math.floor(a/3));
+      if(a-b-c<0)c=0;
+      text=`${a} − ${b} − ${c}`;ans=a-b-c;break;}
+    case 'sub_4_int':{
+      const mx=[9,99,999][subIdx];
+      const m=[Math.min(mx,9),Math.min(mx,20),Math.min(mx,50),mx][lv-1];
+      let a=r(5,m*2||15),b=r(1,Math.floor(a/4)),c=r(1,Math.floor(a/4)),d=r(0,Math.floor(a/4));
+      if(a-b-c-d<0)d=0;
+      text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;break;}
+    case 'sub_int_dec':{
+      allowDec=true;
+      const mx=[10,20,50,100][lv-1];
+      let b=rd1(0.1,Math.min(mx-1,9.9)),a=r(Math.ceil(b)+1,mx);
+      text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;break;}
+    case 'sub_dec_dec':{
+      allowDec=true;
+      if(lv===1){let a=rd1(0.2,9.9),b=rd1(0.1,a-0.1);if(b<0.1)b=0.1;text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===2){let a=rd1(1,9.9),b=rd1(0.1,a-0.1);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===3){let a=rd2(0.5,9.99),b=rd2(0.1,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      else{let a=rd2(1,99.99),b=rd2(0.01,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      break;}
+
+    case 'mul_all_int':{
+      const [mn,mx]=[[2,5],[2,9],[2,12],[3,25]][lv-1];
+      let a=r(mn,mx),b=r(mn,mx);
+      text=`${a} × ${b}`;ans=a*b;break;}
+    case 'mul_all_dec':{
+      allowDec=true;
+      const mx=[5,9,12,20][lv-1];
+      if(lv<=2){let a=r(2,mx),b=rd1(0.1,9.9);text=`${a} × ${fmt(b)}`;ans=Math.round(a*b*10)/10;}
+      else{let a=r(2,mx),b=rd2(0.1,9.9);text=`${a} × ${fmt(b)}`;ans=Math.round(a*b*100)/100;}
+      break;}
+    case 'mul_tables':{
+      const tableN=subIdx<8?subIdx+2:r(2,9);
+      const mx=[5,7,9,10][lv-1];
+      let b=r(1,mx);
+      text=r(0,1)===0?`${tableN} × ${b}`:`${b} × ${tableN}`;
+      ans=tableN*b;break;}
+    case 'mul_10_100':{
+      allowDec=true;
+      const muls=[10,100,1000,pick([10,100,1000])];
+      const m=muls[subIdx];
+      const mx=[99,999,999,999][lv-1];
+      let a=lv<=2?r(1,mx):rd1(0.1,mx);
+      text=`${fmt(a)} × ${m}`;ans=Math.round(parseFloat(a)*m*100)/100;break;}
+    case 'mul_par2':{
+      const mx=[10,25,50,100][lv-1];
+      let a=r(1,mx);text=`${a} × 2`;ans=a*2;break;}
+    case 'mul_par4':{
+      const mx=[10,25,50,100][lv-1];
+      let a=r(1,mx);text=`${a} × 4`;ans=a*4;break;}
+    case 'mul_dec_int':{
+      allowDec=true;
+      const mx=[5,9,12,20][lv-1];
+      let a=rd1(0.1,9.9),b=r(2,mx);
+      text=`${fmt(a)} × ${b}`;ans=Math.round(a*b*10)/10;break;}
+
+    case 'div_all_int':{
+      const [mn,mx]=[[2,5],[2,9],[2,12],[2,12]][lv-1];
+      const mxQ=[5,9,12,20][lv-1];
+      let d=r(mn,mx),q=r(1,mxQ);
+      text=`${d*q} ÷ ${d}`;ans=q;break;}
+    case 'div_all_dec':{
+      allowDec=true;
+      if(lv===1){let d=pick([2,4,5]),q=r(1,9);text=`${d*q} ÷ ${d}`;ans=q;}
+      else if(lv===2){let d=pick([2,4,5,10]),a=r(1,5)*d+r(1,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*10)/10;}
+      else if(lv===3){let d=pick([2,4,5,10]),a=r(1,20)*d+r(0,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
+      else{let d=pick([2,3,4,5,6,8]),a=r(1,50)*d+r(0,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
+      break;}
+    case 'div_pair_2':{
+      const mx=[10,20,50,100][lv-1];
+      let q=r(1,mx);text=`${q*2} ÷ 2`;ans=q;break;}
+    case 'div_impair_2':{
+      allowDec=true;
+      const mx=[10,20,50,100][lv-1];
+      let a=r(1,mx*2);text=`${a} ÷ 2`;ans=a/2;break;}
+    case 'div_248_ent':{
+      const dArr=[[2],[2,4],[2,4,8],[2,4,8]][lv-1];
+      const d=pick(dArr),mx=[5,10,20,50][lv-1];
+      let q=r(1,mx);text=`${q*d} ÷ ${d}`;ans=q;break;}
+    case 'div_248_dec':{
+      allowDec=true;
+      const dArr=[[2],[2,4],[2,4,8],[2,4,8]][lv-1];
+      const d=pick(dArr),mx=[10,20,50,100][lv-1];
+      let a=r(1,mx);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;break;}
+    case 'div_quot_rest':{
+      dual=true;
+      const [mn,mx]=[[2,5],[2,9],[2,9],[3,12]][lv-1];
+      const mxN=[20,50,100,200][lv-1];
+      let d=r(mn,mx),n=r(d+1,mxN);
+      let q=Math.floor(n/d),rest=n%d;
+      text=`${n} ÷ ${d}`;ans=q;ans2=rest;
+      hint='Quotient et reste';break;}
+    default: text='1 + 1';ans=2;
+  }
+
+  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec};
+}
+
+// ================================================================
+// GAME
+// ================================================================
+function startGame(){
+  if(!selCat||!selTypeId){alert('Choisis une opération et un type !');nav(1,'back');return;}
+  if(!selLevel){alert('Choisis un niveau de difficulté !');nav(3,'fwd');return;}
+  questions=[];
+  for(let i=0;i<nbQ;i++)questions.push(genQ(selTypeId,selSubIdx,selLevel));
+  curQ=0;score=0;answers=[];answered=false;
+
+  const lvNames={1:'Débutant',2:'Intermédiaire',3:'Confirmé',4:'Expert'};
+  document.getElementById('gCatLabel').textContent=CAT_NAMES[selCat];
+  document.getElementById('gLvLabel').textContent=lvNames[selLevel];
+  document.getElementById('gQTotal').textContent=nbQ;
+  nav(4,'fwd');
+  setTimeout(showQuestion,300);
+}
+
+function showQuestion(){
+  if(curQ>=nbQ){endGame();return;}
+  answered=false;
+  const q=questions[curQ];
+  isDual=q.isDual;
+
+  document.getElementById('qLabel').textContent=`Question ${curQ+1}`;
+  document.getElementById('qText').textContent=q.text;
+  document.getElementById('qHint').textContent=q.hint||'';
+  document.getElementById('gQNum').textContent=curQ+1;
+  document.getElementById('gScore').textContent=score;
+  document.getElementById('progressFill').style.width=(curQ/nbQ*100)+'%';
+
+  document.getElementById('normalAnswer').style.display=isDual?'none':'block';
+  document.getElementById('dualAnswer').style.display=isDual?'grid':'none';
+  document.getElementById('activeInputLabel').style.display=isDual?'block':'none';
+
+  const dotBtn=document.getElementById('dotBtn');
+  const tabBtn=document.getElementById('tabBtn');
+  if(isDual){dotBtn.style.display='none';tabBtn.style.display='block';}
+  else{dotBtn.style.display=q.allowDec?'block':'none';tabBtn.style.display='none';}
+
+  if(isDual){
+    document.getElementById('ansQ').value='';document.getElementById('ansR').value='';
+    document.getElementById('ansQ').className='answer-input';document.getElementById('ansR').className='answer-input';
+    dualFocus='q';updateDualLabel();
+    setTimeout(()=>document.getElementById('ansQ').focus(),80);
+  }else{
+    const inp=document.getElementById('answerInput');
+    inp.value='';inp.className='answer-input';
+    setTimeout(()=>inp.focus(),80);
+  }
+  bStart();startCountdown();
+}
+
+function updateDualLabel(){
+  document.getElementById('activeInputLabel').textContent=dualFocus==='q'?'Saisie : Quotient':'Saisie : Reste';
+}
+
+function startCountdown(){
+  clearInterval(timer);timeLeft=timePerQ;updateTimerUI(timeLeft,timePerQ);
+  timer=setInterval(()=>{
+    timeLeft--;updateTimerUI(timeLeft,timePerQ);
+    if(timeLeft<=3&&timeLeft>0)bTick();
+    if(timeLeft<=0){clearInterval(timer);bEnd();if(!answered){recordAns(null,false,true);nextQ();}}
+  },1000);
+}
+
+function updateTimerUI(t,total){
+  document.getElementById('timerText').textContent=t;
+  const arc=document.getElementById('timerArc');
+  const frac=t/total;
+  arc.style.strokeDashoffset=CIRC*(1-frac);
+  arc.style.stroke=frac>0.5?'var(--accent4)':frac>0.25?'var(--accent2)':'var(--accent1)';
+}
+
+function handleKey(e){if(e.key==='Enter')submitAnswer();}
+function handleKeyDual(e,field){
+  if(e.key==='Enter'||e.key==='Tab'){
+    e.preventDefault();
+    if(field==='q'){dualFocus='r';updateDualLabel();document.getElementById('ansR').focus();}
+    else submitAnswer();
+  }
+}
+
+function np(k){
+  const inp=isDual?document.getElementById(dualFocus==='q'?'ansQ':'ansR'):document.getElementById('answerInput');
+  if(k==='del')inp.value=inp.value.slice(0,-1);
+  else if(k==='-')inp.value=inp.value.startsWith('-')?inp.value.slice(1):'-'+inp.value;
+  else if(k==='tab'){
+    if(isDual){dualFocus=dualFocus==='q'?'r':'q';updateDualLabel();document.getElementById(dualFocus==='q'?'ansQ':'ansR').focus();}
+  }
+  else if(inp.value.length<10)inp.value+=k;
+}
+
+function submitAnswer(){
+  if(answered)return;
+  const q=questions[curQ];
+  if(isDual){
+    const vq=document.getElementById('ansQ').value.trim();
+    const vr=document.getElementById('ansR').value.trim();
+    if(vq===''||vr==='')return;
+    clearInterval(timer);answered=true;
+    const gq=parseInt(vq,10),gr=parseInt(vr,10);
+    const ok=(gq===q.answer)&&(gr===q.answer2);
+    document.getElementById('ansQ').className='answer-input '+(gq===q.answer?'correct':'wrong');
+    document.getElementById('ansR').className='answer-input '+(gr===q.answer2?'correct':'wrong');
+    if(ok){score++;bOk();showFb('✅');}else{bWrong();showFb('❌');}
+    recordAns(vq+' / '+vr,ok,false);
+    setTimeout(nextQ,950);
+  }else{
+    const v=document.getElementById('answerInput').value.trim();
+    if(v==='')return;
+    clearInterval(timer);answered=true;
+    const given=parseAns(v);
+    const ok=Math.abs(given-q.answer)<0.001;
+    const inp=document.getElementById('answerInput');
+    if(ok){inp.className='answer-input correct';score++;bOk();showFb('✅');}
+    else{inp.className='answer-input wrong';bWrong();showFb('❌');}
+    recordAns(v,ok,false);
+    setTimeout(nextQ,950);
+  }
+}
+
+function recordAns(given,ok,skipped){
+  answers.push({q:questions[curQ].text,ans:questions[curQ].answer,ans2:questions[curQ].answer2,given,ok,skipped,isDual:questions[curQ].isDual});
+}
+
+function nextQ(){curQ++;if(curQ>=nbQ)endGame();else showQuestion();}
+
+function endGame(){
+  clearInterval(timer);nav(5,'fwd');
+  const total=nbQ,correct=answers.filter(a=>a.ok).length;
+  const wrong=answers.filter(a=>!a.ok&&!a.skipped).length;
+  const skip=answers.filter(a=>a.skipped).length;
+  const pct=Math.round(correct/total*100);
+  document.getElementById('resScore').textContent=correct;
+  document.getElementById('resLabel').textContent=`sur ${total} — ${pct>=80?'Bravo !':pct>=60?'Bien !':pct>=40?'Continue !':'Courage !'}`;
+  document.getElementById('stCorrect').textContent=correct;
+  document.getElementById('stWrong').textContent=wrong;
+  document.getElementById('stSkip').textContent=skip;
+  document.getElementById('stPct').textContent=pct+'%';
+  document.getElementById('resEmoji').textContent=pct===100?'🏆':pct>=80?'🎉':pct>=60?'👍':pct>=40?'😊':'😅';
+  const list=document.getElementById('reviewList');
+  list.innerHTML='';
+  answers.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='review-item';
+    const givenStr=a.skipped?'—':a.given;
+    const correctStr=a.isDual?`${a.ans} r.${a.ans2}`:`${fmt(a.ans)}`;
+    const cls=a.ok?'correct-a':'wrong-a';
+    div.innerHTML=`<span class="review-q">${a.q}</span><span class="review-given ${cls}">${givenStr}</span>${!a.ok?`<span class="review-ans">→ ${correctStr}</span>`:''}<span class="review-icon">${a.ok?'✅':a.skipped?'⏱':'❌'}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function quitGame(){
+  if(confirm('Quitter la partie ?')){clearInterval(timer);nav(1,'back');}
+}
+function showFb(txt){
+  const el=document.getElementById('feedbackPop');
+  el.textContent=txt;el.className='feedback-pop show';
+  setTimeout(()=>{el.className='feedback-pop hide';},680);
+}
+
+// Init defaults
+setTime(10);setNbQ(10);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('s4').classList.contains('active')&&!answered)submitAnswer();
+});
+</script>
+</body>
+</html>
