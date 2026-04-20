@@ -318,6 +318,19 @@ body {
   color: var(--muted);
 }
 .g-chip span { color: var(--text); }
+.g-chip-quit {
+  background: var(--card);
+  border-radius: 50px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent1);
+  border: 1.5px solid var(--accent1);
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.15s;
+}
+.g-chip-quit:hover { background: color-mix(in srgb, var(--accent1) 15%, var(--card)); }
 .progress-bar {
   width: 100%;
   height: 5px;
@@ -438,9 +451,50 @@ body {
 }
 
 /* Results */
-.result-hero { text-align: center; margin: 10px 0 18px; }
-.result-emoji { font-size: 3.2rem; }
-.result-score { font-family: 'Fredoka One', cursive; font-size: clamp(3rem, 11vw, 5.5rem); line-height: 1; }
+.result-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin: 14px 0 20px;
+  width: 100%;
+}
+.result-score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.result-fraction {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+.result-num {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(3.5rem, 13vw, 5.5rem);
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.result-slash {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(3.5rem, 13vw, 5.5rem);
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.result-den {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(3.5rem, 13vw, 5.5rem);
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .result-label { font-size: 0.95rem; color: var(--muted); margin-top: 3px; }
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; margin-bottom: 18px; }
 @media (min-width: 440px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -491,22 +545,18 @@ body.cat-div { --clr-active: var(--div); }
     <div class="cat-card" data-cat="add" onclick="selectCat('add')">
       <span class="cat-icon">➕</span>
       <div class="cat-name">Addition</div>
-      <div class="cat-count">13 types</div>
     </div>
     <div class="cat-card" data-cat="sub" onclick="selectCat('sub')">
       <span class="cat-icon">➖</span>
       <div class="cat-name">Soustraction</div>
-      <div class="cat-count">11 types</div>
     </div>
     <div class="cat-card" data-cat="mul" onclick="selectCat('mul')">
       <span class="cat-icon">✖️</span>
       <div class="cat-name">Multiplication</div>
-      <div class="cat-count">7 types</div>
     </div>
     <div class="cat-card" data-cat="div" onclick="selectCat('div')">
       <span class="cat-icon">➗</span>
       <div class="cat-name">Division</div>
-      <div class="cat-count">7 types</div>
     </div>
   </div>
 </div>
@@ -557,17 +607,14 @@ body.cat-div { --clr-active: var(--div); }
       <div class="chip-row" id="timeChips">
         <button class="chip-btn" onclick="setTime(5)">5 s</button>
         <button class="chip-btn selected" onclick="setTime(10)">10 s</button>
+        <button class="chip-btn" onclick="setTime(15)">15 s</button>
         <button class="chip-btn" onclick="setTime(20)">20 s</button>
         <button class="chip-btn" onclick="setTime(30)">30 s</button>
         <button class="chip-btn" onclick="setTime(45)">45 s</button>
         <button class="chip-btn" onclick="setTime(60)">1 min</button>
         <button class="chip-btn" onclick="setTime(75)">1 min 15</button>
         <button class="chip-btn" onclick="setTime(90)">1 min 30</button>
-      </div>
-      <div class="custom-row">
-        <label>Autre :</label>
-        <input type="number" id="customTime" min="3" max="120" placeholder="sec" onchange="setCustomTime(this.value)">
-        <label>s</label>
+        <button class="chip-btn" onclick="setTime(120)">2 min</button>
       </div>
     </div>
     <div class="settings-row">
@@ -583,6 +630,9 @@ body.cat-div { --clr-active: var(--div); }
   </div>
 
   <button class="btn btn-primary" id="startBtn" onclick="startGame()">▶ Commencer !</button>
+  <div id="levelWarning" style="display:none; margin-top:10px; font-size:0.82rem; font-weight:700; color:var(--accent1); text-align:center; animation: fadeIn 0.2s ease;">
+    ⚠️ Choisis d'abord un niveau de difficulté !
+  </div>
 </div>
 
 <!-- ====================================================
@@ -590,7 +640,7 @@ body.cat-div { --clr-active: var(--div); }
 ===================================================== -->
 <div class="screen" id="s4">
   <div class="game-header">
-    <div class="g-chip" id="gCatLabel">Addition</div>
+    <button class="g-chip g-chip-quit" onclick="quitGame()">✕ Quitter</button>
     <div class="g-chip">Q <span id="gQNum">1</span>/<span id="gQTotal">10</span></div>
     <div class="g-chip">✅ <span id="gScore">0</span></div>
     <div class="g-chip" id="gLvLabel">Débutant</div>
@@ -606,16 +656,47 @@ body.cat-div { --clr-active: var(--div); }
     <div class="timer-text" id="timerText">10</div>
   </div>
 
-  <div class="question-card">
+  <!-- Standard question card -->
+  <div class="question-card" id="questionCard">
     <div class="question-label" id="qLabel">Question 1</div>
     <div class="question-text" id="qText">?</div>
     <div class="question-hint" id="qHint"></div>
+  </div>
+
+  <!-- Maison des nombres display -->
+  <div id="maisonDisplay" style="display:none; width:100%; margin-bottom:16px; text-align:center;">
+    <svg id="maisonSvg" viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%; max-width:280px; height:auto; overflow:visible;">
+      <!-- Roof (triangle) -->
+      <polygon points="130,14 20,88 240,88" fill="#4d96ff" opacity="0.22"/>
+      <polyline points="130,14 20,88 240,88 130,14" fill="none" stroke="#4d96ff" stroke-width="3.5" stroke-linejoin="round"/>
+      <!-- Chimney -->
+      <rect x="160" y="26" width="18" height="30" rx="3" fill="#4d96ff" opacity="0.22" stroke="#4d96ff" stroke-width="2.5"/>
+      <!-- House body -->
+      <rect x="20" y="86" width="220" height="110" rx="6" fill="#232236" stroke="#4d96ff" stroke-width="3"/>
+      <!-- Door (small, bottom center) -->
+      <rect x="114" y="158" width="32" height="38" rx="4" fill="#1a1929" stroke="#4d96ff" stroke-width="1.5"/>
+      <circle cx="141" cy="178" r="3" fill="#4d96ff" opacity="0.7"/>
+      <!-- Roof number -->
+      <text id="maisonTgtText" x="130" y="68" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Fredoka One',cursive" font-size="46" fill="#4d96ff">5</text>
+      <!-- Calculation inside house body (large, centred in upper body) -->
+      <text id="maisonCalcText" x="130" y="126" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Fredoka One',cursive" font-size="46" fill="#fffffe">3 + …</text>
+      <!-- Question label -->
+      <text id="maisonQLabel" x="130" y="10" text-anchor="middle" dominant-baseline="auto"
+        font-family="Nunito,sans-serif" font-size="11" font-weight="800" fill="#a7a9be"
+        letter-spacing="2">QUESTION 1</text>
+    </svg>
   </div>
 
   <div id="normalAnswer">
     <div class="answer-wrap">
       <input type="text" inputmode="decimal" class="answer-input" id="answerInput"
         placeholder="?" autocomplete="off" onkeydown="handleKey(event)">
+    </div>
+    <div id="autoSubmitMsg" style="display:none; text-align:center; font-size:0.72rem; font-weight:700; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
+      ⚡ Validation automatique des réponses
     </div>
   </div>
 
@@ -654,7 +735,7 @@ body.cat-div { --clr-active: var(--div); }
     <button class="np-btn ok" onclick="submitAnswer()">✔ Valider</button>
   </div>
 
-  <button class="btn btn-secondary" onclick="quitGame()" style="margin-top:8px;width:100%;">✕ Quitter</button>
+
 </div>
 
 <!-- ====================================================
@@ -662,9 +743,19 @@ body.cat-div { --clr-active: var(--div); }
 ===================================================== -->
 <div class="screen" id="s5">
   <div class="result-hero">
-    <div class="result-emoji" id="resEmoji">🎉</div>
-    <div class="result-score" id="resScore" style="color:var(--accent3)">0</div>
-    <div class="result-label" id="resLabel">sur 10</div>
+    <!-- Score à gauche -->
+    <div class="result-score-block">
+      <div class="result-fraction">
+        <span class="result-num" id="resScore">0</span>
+        <span class="result-slash">/</span>
+        <span class="result-den" id="resDen">10</span>
+      </div>
+    </div>
+    <!-- Smiley + commentaire à droite sur la même ligne -->
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <svg id="resSvg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:90px;height:90px;flex-shrink:0;"></svg>
+      <div class="result-label" id="resLabel" style="font-size:1rem;font-weight:800;color:var(--text);white-space:nowrap;">Bravo !</div>
+    </div>
   </div>
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:var(--accent3)" id="stCorrect">0</div><div class="stat-lbl">Correctes</div></div>
@@ -676,6 +767,7 @@ body.cat-div { --clr-active: var(--div); }
   <div class="review-list" id="reviewList"></div>
   <div class="btn-row">
     <button class="btn btn-secondary" onclick="nav(1,'back')">🏠 Menu</button>
+    <button class="btn btn-secondary" onclick="nav(3,'back')">⚙️ Retour</button>
     <button class="btn btn-primary" onclick="startGame()">🔄 Rejouer</button>
   </div>
 </div>
@@ -688,7 +780,7 @@ const TYPES = {
   add: [
     { id:'add_all_int',   name:'Additions variées (entiers)',           sub:null },
     { id:'add_all_dec',   name:'Additions variées (décimaux)',          sub:null },
-    { id:'add_2_int',     name:'2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
+    { id:'add_2_int',     name:'Additionner 2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
     { id:'add_complement',name:'Trouver un complément (à 10, 100 ou 1000)', sub:['à 10','à 100','à 1000'] },
     { id:'add_maison',    name:'Maisons des nombres (de 3 à 10)',        sub:null },
     { id:'add_mult10',    name:'Additionner des multiples de 10',        sub:null },
@@ -703,7 +795,7 @@ const TYPES = {
   sub: [
     { id:'sub_all_int',   name:'Soustractions variées (entiers)',       sub:null },
     { id:'sub_all_dec',   name:'Soustractions variées (décimaux)',      sub:null },
-    { id:'sub_2_int',     name:'2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
+    { id:'sub_2_int',     name:'Soustraire 2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
     { id:'sub_mult10',    name:'Soustraire des multiples de 10',        sub:null },
     { id:'sub_mult5_10',  name:'Soustraire des multiples de 5 ou 10',  sub:null },
     { id:'sub_fin9',      name:'Soustraire un nombre finissant par 9',  sub:null },
@@ -768,7 +860,50 @@ function nav(screenNum, dir='fwd') {
   document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active','anim-fwd','anim-back');});
   const s=document.getElementById('s'+screenNum);
   s.classList.add('active', dir==='back'?'anim-back':'anim-fwd');
+  if(screenNum===3) applyTablesLock();
   window.scrollTo(0,0);
+}
+
+function applyTablesLock() {
+  const LOCKED_TYPES = { 'mul_tables': 'Tables de multiplication', 'add_maison': 'Maisons des nombres' };
+  const isLocked = selTypeId in LOCKED_TYPES;
+  const timeChipsEl = document.getElementById('timeChips');
+  const chips = timeChipsEl.querySelectorAll('.chip-btn');
+
+  // Remove any existing inline notice
+  const oldNotice = document.getElementById('tablesLockNotice');
+  if(oldNotice) oldNotice.remove();
+
+  if(isLocked){
+    timePerQ = 5;
+    // Hide all chips except the first (5s), show inline label next to it
+    chips.forEach((b, i) => {
+      if(i === 0){
+        b.classList.add('selected');
+        b.disabled = true;
+        b.style.opacity = '';
+        b.style.cursor = 'default';
+        b.style.display = '';
+      } else {
+        b.style.display = 'none';
+      }
+    });
+    // Insert inline notice right after the 5s chip
+    const notice = document.createElement('span');
+    notice.id = 'tablesLockNotice';
+    notice.style.cssText = 'font-size:0.72rem;color:var(--accent2);font-weight:700;align-self:center;';
+    notice.textContent = '— ' + LOCKED_TYPES[selTypeId] + ' : durée fixée à 5 s';
+    timeChipsEl.appendChild(notice);
+  } else {
+    // Restore all chips
+    chips.forEach(b => {
+      b.style.display = '';
+      b.disabled = false;
+      b.style.opacity = '';
+      b.style.cursor = '';
+    });
+    setTime(timePerQ);
+  }
 }
 
 // ================================================================
@@ -859,14 +994,8 @@ function selectLevel(lv){
 }
 function setTime(n){
   timePerQ=n;
-  const vals=[5,10,20,30,45,60,75,90];
+  const vals=[5,10,15,20,30,45,60,75,90,120];
   document.querySelectorAll('#timeChips .chip-btn').forEach((b,i)=>b.classList.toggle('selected',vals[i]===n));
-  document.getElementById('customTime').value='';
-}
-function setCustomTime(v){
-  v=Math.max(3,Math.min(120,parseInt(v)||10));
-  timePerQ=v;
-  document.querySelectorAll('#timeChips .chip-btn').forEach(b=>b.classList.remove('selected'));
 }
 function setNbQ(n){
   nbQ=n;
@@ -877,6 +1006,7 @@ function setNbQ(n){
 // QUESTION GENERATORS
 // ================================================================
 function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function r2(b){return Math.max(2,r(2,Math.max(2,b)));} // min 2, for additions
 function rd1(a,b){return Math.round((Math.random()*(b-a)+a)*10)/10;}
 function rd2(a,b){return Math.round((Math.random()*(b-a)+a)*100)/100;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
@@ -890,75 +1020,123 @@ function genQ(typeId,subIdx,lv){
     case 'add_all_int':{
       const mx=[50,100,300,999][lv-1];
       const t=r(1,4);
-      if(t===1){let a=r(1,mx),b=r(1,mx);text=`${a} + ${b}`;ans=a+b;}
-      else if(t===2){let a=r(1,mx),b=r(1,mx),c=r(1,50);text=`${a} + ${b} + ${c}`;ans=a+b+c;}
-      else if(t===3){let a=r(1,Math.min(mx,99)),b=r(1,Math.min(mx,99)),c=r(1,Math.min(mx,99));text=`${a} + ${b} + ${c}`;ans=a+b+c;}
-      else{let a=r(1,mx),b=r(1,50);text=`${a} + ${b}`;ans=a+b;}
+      if(t===1){let a=r2(mx),b=r2(mx);text=`${a} + ${b}`;ans=a+b;}
+      else if(t===2){let a=r2(mx),b=r2(mx),c=r2(50);text=`${a} + ${b} + ${c}`;ans=a+b+c;}
+      else if(t===3){let a=r2(Math.min(mx,99)),b=r2(Math.min(mx,99)),c=r2(Math.min(mx,99));text=`${a} + ${b} + ${c}`;ans=a+b+c;}
+      else{let a=r2(mx),b=r2(50);text=`${a} + ${b}`;ans=a+b;}
       break;}
     case 'add_all_dec':{
+      // Toujours entier + décimal (jamais entier+entier)
       allowDec=true;
-      const t=r(1,3);
-      const mx=[5,10,50,100][lv-1];
-      if(t===1){let a=r(1,mx),b=rd1(0.1,9.9);text=`${a} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
-      else if(t===2){let a=rd1(0.1,9.9),b=rd1(0.1,9.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
-      else{let a=rd2(0.01,9.99),b=rd2(0.01,9.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      // Helper: decimal with non-zero decimals
+      function decNZ(intMax, decDigits){
+        // intMax: max for integer part, decDigits: 1 or 2
+        const intPart=r(2,intMax);
+        let dec;
+        if(decDigits===1){
+          dec=r(1,9)/10; // 1 chiffre après virgule, jamais 0
+        } else {
+          const d1=r(0,9), d2=r(1,9); // dernier chiffre non nul
+          dec=(d1*10+d2)/100;
+        }
+        return Math.round((intPart+dec)*100)/100;
+      }
+      let a,b;
+      if(lv===1){
+        // Entier 1-2 chiffres (2..99) + décimal partie entière 1 chiffre, 1 chiffre après virgule ≠ 0
+        a=r(2,99);
+        b=decNZ(9,1);
+      } else if(lv===2){
+        // Entier 1-2 chiffres + décimal partie entière 1 chiffre, 1 ou 2 chiffres après virgule ≠ 0
+        a=r(2,99);
+        b=decNZ(9, pick([1,2]));
+      } else if(lv===3){
+        // Entier 1-2 chiffres + décimal partie entière 1-2 chiffres, 1 ou 2 chiffres après virgule ≠ 0
+        a=r(2,99);
+        b=decNZ(r(0,1)===0?9:99, pick([1,2]));
+      } else {
+        // Entier 1-3 chiffres + décimal partie entière 1-2 chiffres, 2 ou 3 chiffres après virgule ≠ 0
+        a=r(2,999);
+        const intPartB=r(2, pick([9,99]));
+        const d1=r(0,9),d2=r(1,9);
+        const useThree=r(0,1)===0;
+        if(useThree){const d0=r(0,9);b=Math.round((intPartB+d0/10+d1/100+d2/1000)*1000)/1000;}
+        else{b=Math.round((intPartB+d1/10+d2/100)*100)/100;}
+      }
+      // Randomly swap order (a+b or b+a)
+      if(r(0,1)===0){text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*1000)/1000;}
+      else{text=`${fmt(b)} + ${fmt(a)}`;ans=Math.round((a+b)*1000)/1000;}
       break;}
     case 'add_2_int':{
       const mx=[9,99,999][subIdx];
       const lvMx=[Math.min(mx,9),Math.min(mx,50),Math.min(mx,300),mx][lv-1];
-      let a=r(1,lvMx),b=r(1,lvMx);
+      let a=r2(lvMx),b=r2(lvMx);
       text=`${a} + ${b}`;ans=a+b;break;}
     case 'add_complement':{
       const tgt=[10,100,1000][subIdx];
       let a;
-      if(tgt===10)a=r(1,9);
-      else if(tgt===100){const m=[10,5,1,1][lv-1];a=r(m,100-m);if(lv===1)a=r(1,9)*10;else if(lv===2)a=r(1,19)*5;}
+      if(tgt===10)a=r(2,8);
+      else if(tgt===100){const m=[10,5,2,2][lv-1];a=r(m,100-m);if(lv===1)a=r(1,9)*10;else if(lv===2)a=r(1,19)*5;}
       else{if(lv===1)a=r(1,9)*100;else if(lv===2)a=r(1,19)*50;else a=r(10,990);}
-      a=Math.max(1,Math.min(a,tgt-1));
+      a=Math.max(2,Math.min(a,tgt-2));
       if(r(0,1)===0){text=`? + ${a} = ${tgt}`;}else{text=`${a} + ? = ${tgt}`;}
       ans=tgt-a;break;}
     case 'add_maison':{
-      // Toutes les maisons (3 à 10) au hasard selon le niveau
       const allTgts=[3,4,5,6,7,8,9,10];
-      // Niveau 1 : maisons 3-6 / Niveau 2 : 3-8 / Niveau 3 : 3-9 / Niveau 4 : 3-10
       const maxTgt=[6,8,9,10][lv-1];
       const availTgts=allTgts.filter(t=>t<=maxTgt);
       const tgt=pick(availTgts);
-      const a=r(0,tgt);
-      if(r(0,1)===0){text=`${a} + ? = ${tgt}`;ans=tgt-a;}
-      else{text=`? + ${tgt-a} = ${tgt}`;ans=a;}
-      break;}
+      const a=r(1,tgt-1);
+      const missing=tgt-a;
+      text=`${a} + …`;
+      ans=missing;
+      return {text, answer:ans, answer2:null, hint:'', isDual:false, allowDec:false, isMaison:true, maisonTgt:tgt, maisonDisplay:text};
+    }
     case 'add_mult10':{
       const mx=[5,10,20,50][lv-1];
-      let a=r(1,mx)*10,b=r(1,mx)*10;
+      let a=r2(mx)*10,b=r2(mx)*10;
       text=`${a} + ${b}`;ans=a+b;break;}
     case 'add_mult5_10':{
       const mx=[4,8,16,30][lv-1];
-      let a=r(1,mx)*5,b=r(1,mx)*5;
+      let a=r2(mx)*5,b=r2(mx)*5;
       text=`${a} + ${b}`;ans=a+b;break;}
     case 'add_fin9':{
       const mx=[10,20,50,100][lv-1];
-      let a=r(1,mx),b=r(1,mx)*10-1;if(b<1)b=9;
+      let a=r2(mx),b=r2(mx)*10-1;if(b<9)b=9;
       text=`${a} + ${b}`;ans=a+b;break;}
     case 'add_fin89':{
       const mx=[10,20,50,100][lv-1];
-      let a=r(1,mx),b=r(1,mx)*10-r(1,2);if(b<1)b=8;
+      let a=r2(mx),b=r2(mx)*10-r(1,2);if(b<8)b=8;
       text=`${a} + ${b}`;ans=a+b;break;}
     case 'add_3_int':{
       const mx=[9,99,999][subIdx];
       const m=[Math.min(mx,9),Math.min(mx,30),Math.min(mx,150),mx][lv-1];
-      let a=r(1,m),b=r(1,m),c=r(1,m);
+      let a=r2(m),b=r2(m),c=r2(m);
       text=`${a} + ${b} + ${c}`;ans=a+b+c;break;}
     case 'add_4_int':{
       const mx=[9,99,999][subIdx];
       const m=[Math.min(mx,9),Math.min(mx,20),Math.min(mx,75),mx][lv-1];
-      let a=r(1,m),b=r(1,m),c=r(1,m),d=r(1,m);
+      let a=r2(m),b=r2(m),c=r2(m),d=r2(m);
       text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;break;}
     case 'add_int_dec':{
+      // Identique à add_all_dec mais nommé séparément — même logique par niveau
       allowDec=true;
-      const mx=[10,20,50,100][lv-1];
-      let a=r(1,mx),b=rd1(0.1,9.9);
-      text=`${a} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;break;}
+      let ai,bi;
+      function decNZ2(intMax,decDigits){
+        const ip=r(2,intMax);
+        let dc;
+        if(decDigits===1){dc=r(1,9)/10;}
+        else{const d1=r(0,9),d2=r(1,9);dc=(d1*10+d2)/100;}
+        return Math.round((ip+dc)*100)/100;
+      }
+      if(lv===1){ai=r(2,99);bi=decNZ2(9,1);}
+      else if(lv===2){ai=r(2,99);bi=decNZ2(9,pick([1,2]));}
+      else if(lv===3){ai=r(2,99);bi=decNZ2(pick([9,99]),pick([1,2]));}
+      else{ai=r(2,999);const ip=r(2,pick([9,99]));const d1=r(0,9),d2=r(1,9);
+        bi=r(0,1)===0?Math.round((ip+r(0,9)/10+d1/100+d2/1000)*1000)/1000:Math.round((ip+d1/10+d2/100)*100)/100;}
+      if(r(0,1)===0){text=`${fmt(ai)} + ${fmt(bi)}`;ans=Math.round((ai+bi)*1000)/1000;}
+      else{text=`${fmt(bi)} + ${fmt(ai)}`;ans=Math.round((ai+bi)*1000)/1000;}
+      break;}
     case 'add_dec_dec':{
       allowDec=true;
       if(lv===1){let a=rd1(0.1,4.9),b=rd1(0.1,4.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
@@ -1101,7 +1279,7 @@ function genQ(typeId,subIdx,lv){
     default: text='1 + 1';ans=2;
   }
 
-  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec};
+  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false};
 }
 
 // ================================================================
@@ -1109,13 +1287,55 @@ function genQ(typeId,subIdx,lv){
 // ================================================================
 function startGame(){
   if(!selCat||!selTypeId){alert('Choisis une opération et un type !');nav(1,'back');return;}
-  if(!selLevel){alert('Choisis un niveau de difficulté !');nav(3,'fwd');return;}
+  if(!selLevel){
+    const w=document.getElementById('levelWarning');
+    w.style.display='block';
+    setTimeout(()=>w.style.display='none', 3000);
+    return;
+  }
+
+  // Commutative operations: + and ×
+  const isCommutative = ['add','mul'].includes(selCat);
+
+  // Build a canonical key for a question to detect duplicates
+  function canonicalKey(q){
+    // Extract numbers from the text (strip " = ?", "…", "?")
+    const raw = q.text.replace(' = ?','').replace('…','?');
+    // For dual (quotient+reste), use text as-is
+    if(q.isDual) return raw;
+    // For decimal answers keep as-is (less likely to repeat)
+    if(q.allowDec) return raw;
+    // Split on operators to get operands
+    const nums = raw.split(/[\+\-\×\÷\=\?\/]/).map(s=>s.trim()).filter(s=>s!=='');
+    if(isCommutative && nums.length>=2){
+      // Sort numbers to treat "3 + 5" same as "5 + 3"
+      return nums.slice().sort((a,b)=>Number(a)-Number(b)).join('|');
+    }
+    return raw;
+  }
+
   questions=[];
-  for(let i=0;i<nbQ;i++)questions.push(genQ(selTypeId,selSubIdx,selLevel));
+  const seen=new Set();
+  let attempts=0;
+  const maxAttempts=nbQ*50;
+
+  while(questions.length<nbQ && attempts<maxAttempts){
+    attempts++;
+    const q=genQ(selTypeId,selSubIdx,selLevel);
+    const key=canonicalKey(q);
+    if(!seen.has(key)){
+      seen.add(key);
+      questions.push(q);
+    }
+  }
+  // If we couldn't find enough unique questions, fill with whatever we have
+  while(questions.length<nbQ){
+    questions.push(genQ(selTypeId,selSubIdx,selLevel));
+  }
+
   curQ=0;score=0;answers=[];answered=false;
 
   const lvNames={1:'Débutant',2:'Intermédiaire',3:'Confirmé',4:'Expert'};
-  document.getElementById('gCatLabel').textContent=CAT_NAMES[selCat];
   document.getElementById('gLvLabel').textContent=lvNames[selLevel];
   document.getElementById('gQTotal').textContent=nbQ;
   nav(4,'fwd');
@@ -1128,12 +1348,23 @@ function showQuestion(){
   const q=questions[curQ];
   isDual=q.isDual;
 
-  document.getElementById('qLabel').textContent=`Question ${curQ+1}`;
-  document.getElementById('qText').textContent=q.text;
-  document.getElementById('qHint').textContent=q.hint||'';
   document.getElementById('gQNum').textContent=curQ+1;
   document.getElementById('gScore').textContent=score;
   document.getElementById('progressFill').style.width=(curQ/nbQ*100)+'%';
+
+  const isMaison = q.isMaison;
+  document.getElementById('questionCard').style.display = isMaison ? 'none' : '';
+  document.getElementById('maisonDisplay').style.display = isMaison ? 'block' : 'none';
+
+  if(isMaison){
+    document.getElementById('maisonQLabel').textContent = `QUESTION ${curQ+1}`;
+    document.getElementById('maisonTgtText').textContent = q.maisonTgt;
+    document.getElementById('maisonCalcText').textContent = q.maisonDisplay;
+  } else {
+    document.getElementById('qLabel').textContent=`Question ${curQ+1}`;
+    document.getElementById('qText').textContent=q.text;
+    document.getElementById('qHint').textContent=q.hint||'';
+  }
 
   document.getElementById('normalAnswer').style.display=isDual?'none':'block';
   document.getElementById('dualAnswer').style.display=isDual?'grid':'none';
@@ -1143,6 +1374,7 @@ function showQuestion(){
   const tabBtn=document.getElementById('tabBtn');
   if(isDual){dotBtn.style.display='none';tabBtn.style.display='block';}
   else{dotBtn.style.display=q.allowDec?'block':'none';tabBtn.style.display='none';}
+  document.getElementById('autoSubmitMsg').style.display=isAutoSubmitType()?'block':'none';
 
   if(isDual){
     document.getElementById('ansQ').value='';document.getElementById('ansR').value='';
@@ -1178,7 +1410,24 @@ function updateTimerUI(t,total){
   arc.style.stroke=frac>0.5?'var(--accent4)':frac>0.25?'var(--accent2)':'var(--accent1)';
 }
 
-function handleKey(e){if(e.key==='Enter')submitAnswer();}
+function isAutoSubmitType(){
+  return selTypeId==='add_maison'||selTypeId==='mul_tables';
+}
+
+function checkAutoSubmit(){
+  if(answered||isDual||!isAutoSubmitType())return;
+  const q=questions[curQ];
+  const inp=document.getElementById('answerInput');
+  const val=inp.value.replace(/[^0-9]/g,'');
+  if(val.length===0)return;
+  const expected=Math.abs(q.answer)===0?1:Math.floor(Math.log10(Math.abs(q.answer)))+1;
+  if(val.length>=expected) setTimeout(submitAnswer,80);
+}
+
+function handleKey(e){
+  if(e.key==='Enter')submitAnswer();
+  else setTimeout(checkAutoSubmit,0);
+}
 function handleKeyDual(e,field){
   if(e.key==='Enter'||e.key==='Tab'){
     e.preventDefault();
@@ -1195,6 +1444,7 @@ function np(k){
     if(isDual){dualFocus=dualFocus==='q'?'r':'q';updateDualLabel();document.getElementById(dualFocus==='q'?'ansQ':'ansR').focus();}
   }
   else if(inp.value.length<10)inp.value+=k;
+  if(!isDual)checkAutoSubmit();
 }
 
 function submitAnswer(){
@@ -1219,11 +1469,23 @@ function submitAnswer(){
     const given=parseAns(v);
     const ok=Math.abs(given-q.answer)<0.001;
     const inp=document.getElementById('answerInput');
-    if(ok){inp.className='answer-input correct';score++;bOk();showFb('✅');}
-    else{inp.className='answer-input wrong';bWrong();showFb('❌');}
+    if(ok){inp.className='answer-input correct';score++;bOk();showFb('✅');maisonFeedback(true);}
+    else{inp.className='answer-input wrong';bWrong();showFb('❌');maisonFeedback(false);}
     recordAns(v,ok,false);
     setTimeout(nextQ,950);
   }
+}
+
+function maisonFeedback(ok){
+  const q=questions[curQ];
+  if(!q.isMaison)return;
+  const rects=document.querySelectorAll('#maisonSvg rect, #maisonSvg polygon, #maisonSvg polyline');
+  const col=ok?'#6bcb77':'#ff6b6b';
+  // Change house body and roof stroke color briefly
+  document.querySelectorAll('#maisonSvg polyline, #maisonSvg rect').forEach(el=>{
+    if(el.getAttribute('stroke')) el.setAttribute('stroke',col);
+  });
+  document.querySelector('#maisonSvg polygon').setAttribute('fill', ok?'rgba(107,203,119,0.2)':'rgba(255,107,107,0.2)');
 }
 
 function recordAns(given,ok,skipped){
@@ -1239,12 +1501,14 @@ function endGame(){
   const skip=answers.filter(a=>a.skipped).length;
   const pct=Math.round(correct/total*100);
   document.getElementById('resScore').textContent=correct;
-  document.getElementById('resLabel').textContent=`sur ${total} — ${pct>=80?'Bravo !':pct>=60?'Bien !':pct>=40?'Continue !':'Courage !'}`;
+  document.getElementById('resDen').textContent=total;
+  document.getElementById('resLabel').textContent=pct>=90?'Bravo !':pct>=70?'Bien !':pct>=40?'Continue !':'Courage !';
+  drawResultSvg(pct);
   document.getElementById('stCorrect').textContent=correct;
   document.getElementById('stWrong').textContent=wrong;
   document.getElementById('stSkip').textContent=skip;
   document.getElementById('stPct').textContent=pct+'%';
-  document.getElementById('resEmoji').textContent=pct===100?'🏆':pct>=80?'🎉':pct>=60?'👍':pct>=40?'😊':'😅';
+
   const list=document.getElementById('reviewList');
   list.innerHTML='';
   answers.forEach(a=>{
@@ -1259,8 +1523,135 @@ function endGame(){
 }
 
 function quitGame(){
-  if(confirm('Quitter la partie ?')){clearInterval(timer);nav(1,'back');}
+  // Remove any existing modal
+  const old=document.getElementById('quitModal');
+  if(old)old.remove();
+  // Pause timer
+  clearInterval(timer);
+
+  const modal=document.createElement('div');
+  modal.id='quitModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;';
+
+  const box=document.createElement('div');
+  box.style.cssText='background:var(--card);border-radius:20px;padding:28px 24px;width:100%;max-width:320px;text-align:center;border:2px solid var(--accent1);';
+
+  box.innerHTML=`
+    <div style="font-size:1.8rem;margin-bottom:10px;">🚪</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:1.3rem;margin-bottom:6px;">Quitter la partie ?</div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:22px;">Ta progression sera perdue.</div>
+    <div style="display:flex;gap:10px;">
+      <button id="quitCancel" style="flex:1;padding:12px;border-radius:50px;border:2px solid var(--surface);background:var(--surface);color:var(--muted);font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;">Continuer</button>
+      <button id="quitConfirm" style="flex:1;padding:12px;border-radius:50px;border:none;background:var(--accent1);color:#1a0000;font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;">Quitter</button>
+    </div>`;
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  document.getElementById('quitConfirm').onclick=()=>{modal.remove();nav(1,'back');};
+  document.getElementById('quitCancel').onclick=()=>{modal.remove();startCountdown();};
 }
+function drawResultSvg(pct){
+  const svg=document.getElementById('resSvg');
+  svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+
+  function el(tag,attrs,text){
+    const e=document.createElementNS(ns,tag);
+    for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);
+    if(text!==undefined)e.textContent=text;
+    return e;
+  }
+
+  function face(cx,cy,r,mouthType){
+    // Shadow
+    svg.appendChild(el('circle',{cx,cy:cy+3,r:r*0.95,fill:'rgba(0,0,0,0.13)'}));
+    // Head
+    svg.appendChild(el('circle',{cx,cy,r,fill:'#ffd93d'}));
+    // Cheeks for big smile
+    if(mouthType==='big'){
+      svg.appendChild(el('circle',{cx:cx-r*0.42,cy:cy+r*0.22,r:r*0.18,fill:'#ff9f7f',opacity:'0.5'}));
+      svg.appendChild(el('circle',{cx:cx+r*0.42,cy:cy+r*0.22,r:r*0.18,fill:'#ff9f7f',opacity:'0.5'}));
+    }
+    // Eyes
+    svg.appendChild(el('ellipse',{cx:cx-r*0.3,cy:cy-r*0.15,rx:r*0.1,ry:r*0.13,fill:'#1a1929'}));
+    svg.appendChild(el('ellipse',{cx:cx+r*0.3,cy:cy-r*0.15,rx:r*0.1,ry:r*0.13,fill:'#1a1929'}));
+    // Shine
+    svg.appendChild(el('circle',{cx:cx-r*0.24,cy:cy-r*0.22,r:r*0.05,fill:'white'}));
+    svg.appendChild(el('circle',{cx:cx+r*0.36,cy:cy-r*0.22,r:r*0.05,fill:'white'}));
+    // Mouth
+    if(mouthType==='big'){
+      svg.appendChild(el('path',{d:`M${cx-r*0.44},${cy+r*0.14} Q${cx},${cy+r*0.68} ${cx+r*0.44},${cy+r*0.14}`,
+        fill:'none',stroke:'#1a1929','stroke-width':r*0.11,'stroke-linecap':'round'}));
+      svg.appendChild(el('path',{d:`M${cx-r*0.42},${cy+r*0.16} Q${cx},${cy+r*0.63} ${cx+r*0.42},${cy+r*0.16}`,
+        fill:'white',opacity:'0.75'}));
+    } else if(mouthType==='smile'){
+      svg.appendChild(el('path',{d:`M${cx-r*0.38},${cy+r*0.18} Q${cx},${cy+r*0.52} ${cx+r*0.38},${cy+r*0.18}`,
+        fill:'none',stroke:'#1a1929','stroke-width':r*0.1,'stroke-linecap':'round'}));
+    } else if(mouthType==='neutral'){
+      svg.appendChild(el('line',{x1:cx-r*0.3,y1:cy+r*0.32,x2:cx+r*0.3,y2:cy+r*0.32,
+        stroke:'#1a1929','stroke-width':r*0.09,'stroke-linecap':'round'}));
+    } else if(mouthType==='sad'){
+      svg.appendChild(el('path',{d:`M${cx-r*0.36},${cy+r*0.48} Q${cx},${cy+r*0.24} ${cx+r*0.36},${cy+r*0.48}`,
+        fill:'none',stroke:'#1a1929','stroke-width':r*0.1,'stroke-linecap':'round'}));
+      svg.appendChild(el('ellipse',{cx:cx+r*0.32,cy:cy+r*0.1,rx:r*0.07,ry:r*0.1,fill:'#88ccff',opacity:'0.8'}));
+    }
+  }
+
+  if(pct===100){
+    // === BELLE COUPE DORÉE DÉGRADÉE ===
+    const defs=document.createElementNS(ns,'defs');
+    const g1=document.createElementNS(ns,'linearGradient');
+    g1.setAttribute('id','cupGold');g1.setAttribute('x1','0%');g1.setAttribute('y1','0%');
+    g1.setAttribute('x2','100%');g1.setAttribute('y2','100%');
+    [{offset:'0%',color:'#fff0a0'},{offset:'30%',color:'#ffd93d'},{offset:'70%',color:'#e6a800'},{offset:'100%',color:'#b8760a'}]
+      .forEach(s=>{const st=document.createElementNS(ns,'stop');st.setAttribute('offset',s.offset);st.setAttribute('stop-color',s.color);g1.appendChild(st);});
+    const g2=document.createElementNS(ns,'linearGradient');
+    g2.setAttribute('id','cupShade');g2.setAttribute('x1','0%');g2.setAttribute('y1','0%');
+    g2.setAttribute('x2','100%');g2.setAttribute('y2','0%');
+    [{offset:'0%',color:'#e6a000'},{offset:'50%',color:'#ffd93d'},{offset:'100%',color:'#c88a00'}]
+      .forEach(s=>{const st=document.createElementNS(ns,'stop');st.setAttribute('offset',s.offset);st.setAttribute('stop-color',s.color);g2.appendChild(st);});
+    defs.appendChild(g1);defs.appendChild(g2);
+    svg.appendChild(defs);
+
+    // Shadow
+    svg.appendChild(el('ellipse',{cx:'60',cy:'114',rx:'26',ry:'5',fill:'rgba(0,0,0,0.18)'}));
+    // Base plate
+    svg.appendChild(el('rect',{x:'40',y:'97',width:'40',height:'9',rx:'4.5',fill:'url(#cupGold)',stroke:'#c8900a','stroke-width':'1'}));
+    // Stem
+    svg.appendChild(el('rect',{x:'54',y:'79',width:'12',height:'20',rx:'3',fill:'url(#cupShade)',stroke:'#c8900a','stroke-width':'1'}));
+    // Cup body
+    svg.appendChild(el('path',{d:'M30,14 Q26,52 34,65 Q43,77 60,77 Q77,77 86,65 Q94,52 90,14 Z',
+      fill:'url(#cupGold)',stroke:'#c8900a','stroke-width':'1.5'}));
+    // Inner shine
+    svg.appendChild(el('path',{d:'M38,18 Q35,48 42,61 Q49,70 58,72',
+      fill:'none',stroke:'rgba(255,255,255,0.5)','stroke-width':'5','stroke-linecap':'round'}));
+    // Left handle
+    svg.appendChild(el('path',{d:'M31,24 Q12,34 14,52 Q16,64 32,62',
+      fill:'none',stroke:'url(#cupShade)','stroke-width':'8','stroke-linecap':'round'}));
+    svg.appendChild(el('path',{d:'M31,24 Q12,34 14,52 Q16,64 32,62',
+      fill:'none',stroke:'#c8900a','stroke-width':'1.5','stroke-linecap':'round'}));
+    // Right handle
+    svg.appendChild(el('path',{d:'M89,24 Q108,34 106,52 Q104,64 88,62',
+      fill:'none',stroke:'url(#cupShade)','stroke-width':'8','stroke-linecap':'round'}));
+    svg.appendChild(el('path',{d:'M89,24 Q108,34 106,52 Q104,64 88,62',
+      fill:'none',stroke:'#c8900a','stroke-width':'1.5','stroke-linecap':'round'}));
+    // Stars
+    [['20','12','16'],['98','10','13'],['12','52','11']]
+      .forEach(([x,y,fs])=>svg.appendChild(el('text',{x,y,'text-anchor':'middle',
+        'dominant-baseline':'middle','font-size':fs,fill:'#ffe566',opacity:'0.95'},'★')));
+
+  } else if(pct>=90){
+    face(60, 54, 40, 'big');
+  } else if(pct>=70){
+    face(60, 54, 38, 'smile');
+  } else if(pct>=40){
+    face(60, 54, 36, 'neutral');
+  } else {
+    face(60, 52, 36, 'sad');
+  }
+}
+
 function showFb(txt){
   const el=document.getElementById('feedbackPop');
   el.textContent=txt;el.className='feedback-pop show';
