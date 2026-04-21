@@ -441,14 +441,7 @@ body {
 .np-btn.ok { background: linear-gradient(135deg, var(--accent4), var(--accent3)); color: #001a00; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.92rem; grid-column: span 3; padding: 14px; }
 .active-input-label { font-size: 0.68rem; color: var(--accent2); text-align: center; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 
-@media (min-width: 480px) {
-  .numpad { display: none; }
-  .active-input-label { display: none; }
-  .answer-input { pointer-events: auto; }
-}
-@media (max-width: 479px) {
-  .answer-input { pointer-events: none; caret-color: transparent; }
-}
+/* numpad always visible */
 
 /* Results */
 .result-hero {
@@ -692,8 +685,8 @@ body.cat-div { --clr-active: var(--div); }
 
   <div id="normalAnswer">
     <div class="answer-wrap">
-      <input type="text" inputmode="decimal" class="answer-input" id="answerInput"
-        placeholder="?" autocomplete="off" onkeydown="handleKey(event)">
+      <input type="text" inputmode="none" class="answer-input" id="answerInput"
+        placeholder="?" autocomplete="off" readonly onkeydown="handleKey(event)">
     </div>
     <div id="autoSubmitMsg" style="display:none; text-align:center; font-size:0.72rem; font-weight:700; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
       ⚡ Validation automatique des réponses
@@ -704,13 +697,13 @@ body.cat-div { --clr-active: var(--div); }
     <div class="dual-answer">
       <div>
         <div class="dual-label">Quotient</div>
-        <input type="text" inputmode="numeric" class="answer-input" id="ansQ"
-          placeholder="?" autocomplete="off" onkeydown="handleKeyDual(event,'q')">
+        <input type="text" inputmode="none" class="answer-input" id="ansQ"
+          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'q')">
       </div>
       <div>
         <div class="dual-label">Reste</div>
-        <input type="text" inputmode="numeric" class="answer-input" id="ansR"
-          placeholder="?" autocomplete="off" onkeydown="handleKeyDual(event,'r')">
+        <input type="text" inputmode="none" class="answer-input" id="ansR"
+          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'r')">
       </div>
     </div>
   </div>
@@ -1342,6 +1335,10 @@ function startGame(){
   setTimeout(showQuestion,300);
 }
 
+function isTouchDevice(){
+  return /Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent)||('ontouchstart' in window);
+}
+
 function showQuestion(){
   if(curQ>=nbQ){endGame();return;}
   answered=false;
@@ -1380,11 +1377,11 @@ function showQuestion(){
     document.getElementById('ansQ').value='';document.getElementById('ansR').value='';
     document.getElementById('ansQ').className='answer-input';document.getElementById('ansR').className='answer-input';
     dualFocus='q';updateDualLabel();
-    setTimeout(()=>document.getElementById('ansQ').focus(),80);
+    if(!isTouchDevice())setTimeout(()=>document.getElementById('ansQ').focus(),80);
   }else{
     const inp=document.getElementById('answerInput');
     inp.value='';inp.className='answer-input';
-    setTimeout(()=>inp.focus(),80);
+    if(!isTouchDevice())setTimeout(()=>inp.focus(),80);
   }
   bStart();startCountdown();
 }
@@ -1657,6 +1654,17 @@ function showFb(txt){
   el.textContent=txt;el.className='feedback-pop show';
   setTimeout(()=>{el.className='feedback-pop hide';},680);
 }
+
+// On desktop: remove readonly so physical keyboard works; on mobile readonly stays (use built-in numpad)
+(function(){
+  const isMobile = /Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || ('ontouchstart' in window);
+  if(!isMobile){
+    ['answerInput','ansQ','ansR'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.removeAttribute('readonly');el.setAttribute('inputmode','decimal');}
+    });
+  }
+})();
 
 // Init defaults
 setTime(10);setNbQ(10);
