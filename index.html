@@ -331,6 +331,19 @@ body {
   transition: all 0.15s;
 }
 .g-chip-quit:hover { background: color-mix(in srgb, var(--accent1) 15%, var(--card)); }
+.g-chip-pause {
+  background: var(--card);
+  border-radius: 50px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent2);
+  border: 1.5px solid var(--accent2);
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.15s;
+}
+.g-chip-pause:hover { background: color-mix(in srgb, var(--accent2) 15%, var(--card)); }
 .progress-bar {
   width: 100%;
   height: 5px;
@@ -495,13 +508,13 @@ body {
 .stat-val { font-size: 1.6rem; font-weight: 800; }
 .stat-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
 .review-list { width: 100%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; max-height: 280px; overflow-y: auto; }
-.review-item { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 9px; padding: 9px 13px; font-size: 0.88rem; gap: 8px; }
-.review-q { font-weight: 700; flex: 1; }
-.review-given { font-weight: 800; }
+.review-item { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 11px; padding: 12px 16px; font-size: 1.4rem; gap: 10px; }
+.review-q { font-weight: 700; flex: 1; font-size: 1.4rem; }
+.review-given { font-weight: 800; font-size: 1.4rem; }
 .correct-a { color: var(--accent3); }
 .wrong-a { color: var(--accent1); text-decoration: line-through; }
-.review-ans { color: var(--accent3); font-size: 0.78rem; }
-.review-icon { font-size: 1rem; flex-shrink: 0; }
+.review-ans { color: var(--accent3); font-size: 1.4rem; font-weight: 700; }
+.review-icon { font-size: 1.4rem; flex-shrink: 0; }
 .btn-row { display: flex; gap: 10px; width: 100%; }
 .btn-row .btn { flex: 1; }
 
@@ -636,6 +649,7 @@ body.cat-div { --clr-active: var(--div); }
     <button class="g-chip g-chip-quit" onclick="quitGame()">✕ Quitter</button>
     <div class="g-chip">Q <span id="gQNum">1</span>/<span id="gQTotal">10</span></div>
     <div class="g-chip">✅ <span id="gScore">0</span></div>
+    <button class="g-chip g-chip-pause" id="pauseBtn" onclick="togglePause()">⏸ Pause</button>
     <div class="g-chip" id="gLvLabel">Débutant</div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
@@ -720,10 +734,9 @@ body.cat-div { --clr-active: var(--div); }
     <button class="np-btn" onclick="np('1')">1</button>
     <button class="np-btn" onclick="np('2')">2</button>
     <button class="np-btn" onclick="np('3')">3</button>
-    <button class="np-btn sp" onclick="np('-')">+/−</button>
+    <button class="np-btn sp" id="dotBtn" onclick="np(',')" style="font-size:1.6rem;">,</button>
     <button class="np-btn" onclick="np('0')">0</button>
     <button class="np-btn sp" onclick="np('del')">⌫</button>
-    <button class="np-btn sp" id="dotBtn" onclick="np('.')">·</button>
     <button class="np-btn sp" id="tabBtn" onclick="np('tab')" style="display:none;">Tab→</button>
     <button class="np-btn ok" onclick="submitAnswer()">✔ Valider</button>
   </div>
@@ -828,6 +841,7 @@ let selCat=null, selTypeId=null, selSubIdx=0, selLevel=null;
 let timePerQ=10, nbQ=10;
 let questions=[], curQ=0, score=0, answers=[];
 let timer=null, timeLeft=0, answered=false, isDual=false, dualFocus='q';
+let paused=false;
 const CIRC=257.6;
 
 // ================================================================
@@ -840,11 +854,16 @@ function beep(f,d,type='sine',v=0.32){
   o.connect(g);g.connect(a.destination);o.type=type;o.frequency.value=f;
   g.gain.setValueAtTime(v,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);
   o.start();o.stop(a.currentTime+d);}catch(e){}}
-const bStart=()=>{beep(880,0.1);setTimeout(()=>beep(1047,0.12),120);}
-const bEnd=()=>{beep(523,0.07,'square',0.18);setTimeout(()=>beep(392,0.07,'square',0.18),90);setTimeout(()=>beep(330,0.18,'square',0.14),180);}
-const bOk=()=>{beep(1047,0.06);setTimeout(()=>beep(1319,0.13),65);}
-const bWrong=()=>beep(220,0.18,'sawtooth',0.18);
-const bTick=()=>beep(660,0.04,'sine',0.1);
+const bStart=()=>{beep(659,0.08,'sine',0.2);setTimeout(()=>beep(784,0.1,'sine',0.18),100);}
+const bEnd=()=>{
+  // Son doux : accord descendant en sinus
+  beep(523,0.18,'sine',0.18);
+  setTimeout(()=>beep(440,0.18,'sine',0.14),160);
+  setTimeout(()=>beep(349,0.25,'sine',0.10),300);
+}
+const bOk=()=>{beep(880,0.07,'sine',0.2);setTimeout(()=>beep(1109,0.12,'sine',0.16),80);}
+const bWrong=()=>{beep(311,0.1,'sine',0.18);setTimeout(()=>beep(277,0.15,'sine',0.14),110);}
+const bTick=()=>beep(880,0.03,'sine',0.08);
 
 // ================================================================
 // NAVIGATION
@@ -1326,7 +1345,7 @@ function startGame(){
     questions.push(genQ(selTypeId,selSubIdx,selLevel));
   }
 
-  curQ=0;score=0;answers=[];answered=false;
+  curQ=0;score=0;answers=[];answered=false;paused=false;
 
   const lvNames={1:'Débutant',2:'Intermédiaire',3:'Confirmé',4:'Expert'};
   document.getElementById('gLvLabel').textContent=lvNames[selLevel];
@@ -1436,7 +1455,10 @@ function handleKeyDual(e,field){
 function np(k){
   const inp=isDual?document.getElementById(dualFocus==='q'?'ansQ':'ansR'):document.getElementById('answerInput');
   if(k==='del')inp.value=inp.value.slice(0,-1);
-  else if(k==='-')inp.value=inp.value.startsWith('-')?inp.value.slice(1):'-'+inp.value;
+  else if(k===','){
+    // Only add comma if not already present and decimal is allowed
+    if(!inp.value.includes(',')&&!inp.value.includes('.'))inp.value+=',';
+  }
   else if(k==='tab'){
     if(isDual){dualFocus=dualFocus==='q'?'r':'q';updateDualLabel();document.getElementById(dualFocus==='q'?'ansQ':'ansR').focus();}
   }
@@ -1517,6 +1539,55 @@ function endGame(){
     div.innerHTML=`<span class="review-q">${a.q}</span><span class="review-given ${cls}">${givenStr}</span>${!a.ok?`<span class="review-ans">→ ${correctStr}</span>`:''}<span class="review-icon">${a.ok?'✅':a.skipped?'⏱':'❌'}</span>`;
     list.appendChild(div);
   });
+}
+
+function togglePause(){
+  if(answered)return;
+  paused=!paused;
+  const btn=document.getElementById('pauseBtn');
+  if(paused){
+    clearInterval(timer);
+    btn.textContent='▶ Reprendre';
+    btn.style.color='var(--accent3)';
+    btn.style.borderColor='var(--accent3)';
+    // Hide the question and answer area
+    document.getElementById('questionCard').style.visibility='hidden';
+    document.getElementById('maisonDisplay').style.visibility='hidden';
+    document.getElementById('normalAnswer').style.visibility='hidden';
+    document.getElementById('dualAnswer').style.visibility='hidden';
+    document.getElementById('numpad').style.visibility='hidden';
+    document.getElementById('autoSubmitMsg').style.visibility='hidden';
+    // Show pause overlay
+    const overlay=document.createElement('div');
+    overlay.id='pauseOverlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(15,14,23,0.88);display:flex;align-items:center;justify-content:center;z-index:150;';
+    overlay.innerHTML=`<div style="text-align:center;">
+      <div style="font-family:'Fredoka One',cursive;font-size:3.5rem;color:var(--accent2);margin-bottom:10px;">⏸</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--text);margin-bottom:24px;">Pause</div>
+      <button onclick="togglePause()" style="padding:14px 36px;border-radius:50px;border:none;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#1a0a00;font-family:Nunito,sans-serif;font-size:1.05rem;font-weight:800;cursor:pointer;">▶ Reprendre</button>
+    </div>`;
+    document.body.appendChild(overlay);
+  } else {
+    const overlay=document.getElementById('pauseOverlay');
+    if(overlay)overlay.remove();
+    btn.textContent='⏸ Pause';
+    btn.style.color='var(--accent2)';
+    btn.style.borderColor='var(--accent2)';
+    // Restore question and answer area
+    document.getElementById('questionCard').style.visibility='';
+    document.getElementById('maisonDisplay').style.visibility='';
+    document.getElementById('normalAnswer').style.visibility='';
+    document.getElementById('dualAnswer').style.visibility='';
+    document.getElementById('numpad').style.visibility='';
+    document.getElementById('autoSubmitMsg').style.visibility='';
+    // Resume countdown from where it stopped (timeLeft unchanged)
+    timer=setInterval(()=>{
+      timeLeft--;
+      updateTimerUI(timeLeft,timePerQ);
+      if(timeLeft<=3&&timeLeft>0)bTick();
+      if(timeLeft<=0){clearInterval(timer);bEnd();if(!answered){recordAns(null,false,true);nextQ();}}
+    },1000);
+  }
 }
 
 function quitGame(){
