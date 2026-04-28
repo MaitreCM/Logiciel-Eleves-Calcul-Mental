@@ -395,7 +395,7 @@ body {
 }
 .question-text {
   font-family: 'Fredoka One', cursive;
-  font-size: clamp(1.7rem, 7vw, 3rem);
+  font-size: clamp(2.4rem, 10vw, 4.2rem);
   line-height: 1.15;
 }
 .question-hint { font-size: 0.78rem; color: var(--muted); margin-top: 7px; }
@@ -1030,110 +1030,162 @@ function genQ(typeId,subIdx,lv){
 
   switch(typeId){
     case 'add_all_int':{
-      const mx=[50,100,300,999][lv-1];
-      const t=r(1,4);
-      if(t===1){let a=r2(mx),b=r2(mx);text=`${a} + ${b}`;ans=a+b;}
-      else if(t===2){let a=r2(mx),b=r2(mx),c=r2(50);text=`${a} + ${b} + ${c}`;ans=a+b+c;}
-      else if(t===3){let a=r2(Math.min(mx,99)),b=r2(Math.min(mx,99)),c=r2(Math.min(mx,99));text=`${a} + ${b} + ${c}`;ans=a+b+c;}
-      else{let a=r2(mx),b=r2(50);text=`${a} + ${b}`;ans=a+b;}
+      // Niveau basé sur retenue et complexité cognitive
+      if(lv===1){
+        // Sans retenue : unités de a + unités de b < 10
+        let a,b;
+        do{a=r(10,50);b=r(2,20);}while((a%10)+(b%10)>=10);
+        text=`${a} + ${b}`;ans=a+b;
+      } else if(lv===2){
+        // Avec retenue simple (passage à la dizaine)
+        let a=r(20,80), u=r(2,9), add=10-(a%10)+r(0,u);
+        b=add>0?add:r(7,15); let bb=b;
+        text=`${a} + ${bb}`;ans=a+bb;
+      } else if(lv===3){
+        // Double retenue ou nombres 2+2 chiffres
+        let a=r(25,85),b=r(15,75);
+        text=`${a} + ${b}`;ans=a+b;
+      } else {
+        // Enchaînement ou grands nombres avec retenues multiples
+        const t=r(0,1);
+        if(t===0){let a=r(49,195),b=r(38,175);text=`${a} + ${b}`;ans=a+b;}
+        else{let a=r(20,80),b=r(15,60),c=r(10,40);text=`${a} + ${b} + ${c}`;ans=a+b+c;}
+      }
       break;}
+
     case 'add_all_dec':{
-      // Toujours entier + décimal (jamais entier+entier)
       allowDec=true;
-      // Helper: decimal with non-zero decimals
-      function decNZ(intMax, decDigits){
-        // intMax: max for integer part, decDigits: 1 or 2
+      function decNZ(intMax,decDigits){
         const intPart=r(2,intMax);
         let dec;
-        if(decDigits===1){
-          dec=r(1,9)/10; // 1 chiffre après virgule, jamais 0
-        } else {
-          const d1=r(0,9), d2=r(1,9); // dernier chiffre non nul
-          dec=(d1*10+d2)/100;
-        }
+        if(decDigits===1){dec=r(1,9)/10;}
+        else{const d1=r(0,9),d2=r(1,9);dec=(d1*10+d2)/100;}
         return Math.round((intPart+dec)*100)/100;
       }
       let a,b;
-      if(lv===1){
-        // Entier 1-2 chiffres (2..99) + décimal partie entière 1 chiffre, 1 chiffre après virgule ≠ 0
-        a=r(2,99);
-        b=decNZ(9,1);
-      } else if(lv===2){
-        // Entier 1-2 chiffres + décimal partie entière 1 chiffre, 1 ou 2 chiffres après virgule ≠ 0
-        a=r(2,99);
-        b=decNZ(9, pick([1,2]));
-      } else if(lv===3){
-        // Entier 1-2 chiffres + décimal partie entière 1-2 chiffres, 1 ou 2 chiffres après virgule ≠ 0
-        a=r(2,99);
-        b=decNZ(r(0,1)===0?9:99, pick([1,2]));
-      } else {
-        // Entier 1-3 chiffres + décimal partie entière 1-2 chiffres, 2 ou 3 chiffres après virgule ≠ 0
-        a=r(2,999);
-        const intPartB=r(2, pick([9,99]));
-        const d1=r(0,9),d2=r(1,9);
-        const useThree=r(0,1)===0;
-        if(useThree){const d0=r(0,9);b=Math.round((intPartB+d0/10+d1/100+d2/1000)*1000)/1000;}
-        else{b=Math.round((intPartB+d1/10+d2/100)*100)/100;}
-      }
-      // Randomly swap order (a+b or b+a)
+      if(lv===1){a=r(2,99);b=decNZ(9,1);}
+      else if(lv===2){a=r(2,99);b=decNZ(9,pick([1,2]));}
+      else if(lv===3){a=r(2,99);b=decNZ(pick([9,99]),pick([1,2]));}
+      else{a=r(2,999);const ip=r(2,pick([9,99]));const d1=r(0,9),d2=r(1,9);
+        b=r(0,1)===0?Math.round((ip+r(0,9)/10+d1/100+d2/1000)*1000)/1000:Math.round((ip+d1/10+d2/100)*100)/100;}
       if(r(0,1)===0){text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*1000)/1000;}
       else{text=`${fmt(b)} + ${fmt(a)}`;ans=Math.round((a+b)*1000)/1000;}
       break;}
+
     case 'add_2_int':{
-      const mx=[9,99,999][subIdx];
-      const lvMx=[Math.min(mx,9),Math.min(mx,50),Math.min(mx,300),mx][lv-1];
-      let a=r2(lvMx),b=r2(lvMx);
-      text=`${a} + ${b}`;ans=a+b;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){
+        // Sans retenue dans la plage choisie
+        let a,b;
+        do{a=r(2,Math.min(maxRange,50));b=r(2,Math.min(maxRange,20));}
+        while(maxRange>9&&(a%10)+(b%10)>=10);
+        text=`${a} + ${b}`;ans=a+b;
+      } else if(lv===2){
+        // Avec retenue simple
+        let a=r(2,Math.min(maxRange,79)),b=r(2,Math.min(maxRange,30));
+        text=`${a} + ${b}`;ans=a+b;
+      } else if(lv===3){
+        // Retenues multiples
+        let a=r(25,Math.min(maxRange,85)),b=r(15,Math.min(maxRange,75));
+        text=`${a} + ${b}`;ans=a+b;
+      } else {
+        let a=r(50,Math.min(maxRange,950)),b=r(38,Math.min(maxRange,500));
+        text=`${a} + ${b}`;ans=a+b;
+      }
+      break;}
+
     case 'add_complement':{
       const tgt=[10,100,1000][subIdx];
       let a;
-      if(tgt===10)a=r(2,8);
-      else if(tgt===100){const m=[10,5,2,2][lv-1];a=r(m,100-m);if(lv===1)a=r(1,9)*10;else if(lv===2)a=r(1,19)*5;}
-      else{if(lv===1)a=r(1,9)*100;else if(lv===2)a=r(1,19)*50;else a=r(10,990);}
+      if(lv===1){
+        // Compléments ronds : à 10 simple, à 100/1000 par dizaines/centaines
+        if(tgt===10)a=r(2,8);
+        else if(tgt===100)a=r(1,9)*10;
+        else a=r(1,9)*100;
+      } else if(lv===2){
+        if(tgt===10)a=r(2,8);
+        else if(tgt===100)a=r(1,19)*5;
+        else a=r(1,19)*50;
+      } else if(lv===3){
+        if(tgt===10)a=r(2,8);
+        else if(tgt===100)a=r(5,95);
+        else a=r(10,990);
+      } else {
+        if(tgt===10)a=r(2,8);
+        else if(tgt===100)a=r(3,97);
+        else a=r(7,993);
+      }
       a=Math.max(2,Math.min(a,tgt-2));
       if(r(0,1)===0){text=`? + ${a} = ${tgt}`;}else{text=`${a} + ? = ${tgt}`;}
       ans=tgt-a;break;}
+
     case 'add_maison':{
       const allTgts=[3,4,5,6,7,8,9,10];
       const maxTgt=[6,8,9,10][lv-1];
       const availTgts=allTgts.filter(t=>t<=maxTgt);
       const tgt=pick(availTgts);
       const a=r(1,tgt-1);
-      const missing=tgt-a;
-      text=`${a} + …`;
-      ans=missing;
+      text=`${a} + …`;ans=tgt-a;
       return {text, answer:ans, answer2:null, hint:'', isDual:false, allowDec:false, isMaison:true, maisonTgt:tgt, maisonDisplay:text};
     }
+
     case 'add_mult10':{
-      const mx=[5,10,20,50][lv-1];
-      let a=r2(mx)*10,b=r2(mx)*10;
-      text=`${a} + ${b}`;ans=a+b;break;}
+      // Lv1: multiples de 10 sans retenue / Lv2: avec retenue centaine / Lv3-4: grands multiples
+      if(lv===1){let a=r(2,5)*10,b=r(2,4)*10;text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===2){let a=r(3,8)*10,b=r(3,7)*10;text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===3){let a=r(5,15)*10,b=r(5,12)*10;text=`${a} + ${b}`;ans=a+b;}
+      else{let a=r(10,50)*10,b=r(8,40)*10;text=`${a} + ${b}`;ans=a+b;}
+      break;}
+
     case 'add_mult5_10':{
-      const mx=[4,8,16,30][lv-1];
-      let a=r2(mx)*5,b=r2(mx)*5;
-      text=`${a} + ${b}`;ans=a+b;break;}
+      if(lv===1){let a=r(2,6)*5,b=r(2,5)*5;text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===2){let a=r(3,9)*5,b=r(3,8)*5;text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===3){let a=r(4,14)*5,b=r(4,12)*5;text=`${a} + ${b}`;ans=a+b;}
+      else{let a=r(8,30)*5,b=r(6,25)*5;text=`${a} + ${b}`;ans=a+b;}
+      break;}
+
     case 'add_fin9':{
-      const mx=[10,20,50,100][lv-1];
-      let a=r2(mx),b=r2(mx)*10-1;if(b<9)b=9;
-      text=`${a} + ${b}`;ans=a+b;break;}
+      // Stratégie : arrondir à la dizaine puis ajuster (cognitif)
+      if(lv===1){let a=r(2,20),b=pick([9,19,29]);text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===2){let a=r(10,50),b=pick([9,19,29,39]);text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===3){let a=r(20,80),b=pick([19,29,39,49,59]);text=`${a} + ${b}`;ans=a+b;}
+      else{let a=r(30,150),b=pick([29,39,49,59,69,79,89,99]);text=`${a} + ${b}`;ans=a+b;}
+      break;}
+
     case 'add_fin89':{
-      const mx=[10,20,50,100][lv-1];
-      let a=r2(mx),b=r2(mx)*10-r(1,2);if(b<8)b=8;
-      text=`${a} + ${b}`;ans=a+b;break;}
+      if(lv===1){let a=r(2,20),b=pick([8,9,18,19]);text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===2){let a=r(10,50),b=pick([8,9,18,19,28,29]);text=`${a} + ${b}`;ans=a+b;}
+      else if(lv===3){let a=r(20,80),b=pick([18,19,28,29,38,39,48,49]);text=`${a} + ${b}`;ans=a+b;}
+      else{let a=r(30,150),b=pick([38,39,48,49,58,59,68,69,78,79,88,89,98,99]);text=`${a} + ${b}`;ans=a+b;}
+      break;}
+
     case 'add_3_int':{
-      const mx=[9,99,999][subIdx];
-      const m=[Math.min(mx,9),Math.min(mx,30),Math.min(mx,150),mx][lv-1];
-      let a=r2(m),b=r2(m),c=r2(m);
-      text=`${a} + ${b} + ${c}`;ans=a+b+c;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){
+        let a=r(2,Math.min(maxRange,15)),b=r(2,Math.min(maxRange,10)),c=r(2,Math.min(maxRange,8));
+        text=`${a} + ${b} + ${c}`;ans=a+b+c;
+      } else if(lv===2){
+        let a=r(10,Math.min(maxRange,50)),b=r(5,Math.min(maxRange,30)),c=r(2,Math.min(maxRange,20));
+        text=`${a} + ${b} + ${c}`;ans=a+b+c;
+      } else if(lv===3){
+        let a=r(20,Math.min(maxRange,80)),b=r(15,Math.min(maxRange,60)),c=r(10,Math.min(maxRange,40));
+        text=`${a} + ${b} + ${c}`;ans=a+b+c;
+      } else {
+        let a=r(50,Math.min(maxRange,400)),b=r(30,Math.min(maxRange,300)),c=r(20,Math.min(maxRange,200));
+        text=`${a} + ${b} + ${c}`;ans=a+b+c;
+      }
+      break;}
+
     case 'add_4_int':{
-      const mx=[9,99,999][subIdx];
-      const m=[Math.min(mx,9),Math.min(mx,20),Math.min(mx,75),mx][lv-1];
-      let a=r2(m),b=r2(m),c=r2(m),d=r2(m);
-      text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){let a=r(2,Math.min(maxRange,8)),b=r(2,Math.min(maxRange,7)),c=r(2,Math.min(maxRange,6)),d=r(2,Math.min(maxRange,5));text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;}
+      else if(lv===2){let a=r(5,Math.min(maxRange,25)),b=r(4,Math.min(maxRange,20)),c=r(3,Math.min(maxRange,15)),d=r(2,Math.min(maxRange,10));text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;}
+      else if(lv===3){let a=r(15,Math.min(maxRange,50)),b=r(12,Math.min(maxRange,40)),c=r(8,Math.min(maxRange,30)),d=r(5,Math.min(maxRange,25));text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;}
+      else{let a=r(30,Math.min(maxRange,200)),b=r(25,Math.min(maxRange,150)),c=r(20,Math.min(maxRange,100)),d=r(15,Math.min(maxRange,80));text=`${a} + ${b} + ${c} + ${d}`;ans=a+b+c+d;}
+      break;}
+
     case 'add_int_dec':{
-      // Identique à add_all_dec mais nommé séparément — même logique par niveau
       allowDec=true;
-      let ai,bi;
       function decNZ2(intMax,decDigits){
         const ip=r(2,intMax);
         let dc;
@@ -1141,6 +1193,7 @@ function genQ(typeId,subIdx,lv){
         else{const d1=r(0,9),d2=r(1,9);dc=(d1*10+d2)/100;}
         return Math.round((ip+dc)*100)/100;
       }
+      let ai,bi;
       if(lv===1){ai=r(2,99);bi=decNZ2(9,1);}
       else if(lv===2){ai=r(2,99);bi=decNZ2(9,pick([1,2]));}
       else if(lv===3){ai=r(2,99);bi=decNZ2(pick([9,99]),pick([1,2]));}
@@ -1149,18 +1202,39 @@ function genQ(typeId,subIdx,lv){
       if(r(0,1)===0){text=`${fmt(ai)} + ${fmt(bi)}`;ans=Math.round((ai+bi)*1000)/1000;}
       else{text=`${fmt(bi)} + ${fmt(ai)}`;ans=Math.round((ai+bi)*1000)/1000;}
       break;}
+
     case 'add_dec_dec':{
       allowDec=true;
-      if(lv===1){let a=rd1(0.1,4.9),b=rd1(0.1,4.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
-      else if(lv===2){let a=rd1(0.1,9.9),b=rd1(0.1,9.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
-      else if(lv===3){let a=rd2(0.01,9.99),b=rd2(0.01,9.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
-      else{let a=rd2(0.01,99.99),b=rd2(0.01,99.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      if(lv===1){let a=rd1(0.2,4.9),b=rd1(0.2,4.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else if(lv===2){let a=rd1(0.2,9.9),b=rd1(0.2,9.9);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*10)/10;}
+      else if(lv===3){let a=rd2(0.05,9.99),b=rd2(0.05,9.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
+      else{let a=rd2(0.05,99.99),b=rd2(0.05,99.99);text=`${fmt(a)} + ${fmt(b)}`;ans=Math.round((a+b)*100)/100;}
       break;}
 
     case 'sub_all_int':{
-      const mx=[20,100,500,999][lv-1];
-      let a=r(2,mx),b=r(1,a);
-      text=`${a} − ${b}`;ans=a-b;break;}
+      if(lv===1){
+        // Sans emprunt
+        let a,b;
+        do{a=r(12,60);b=r(2,a-1);}while(a%10<b%10);
+        text=`${a} − ${b}`;ans=a-b;
+      } else if(lv===2){
+        // Avec emprunt simple, passage à la dizaine
+        let a=r(20,80),b;
+        do{b=r(3,a-1);}while(a%10>=b%10);
+        text=`${a} − ${b}`;ans=a-b;
+      } else if(lv===3){
+        // Soustraction à 3 chiffres ou double emprunt
+        const t=pick(['200−86','3chif']);
+        if(t==='200−86'){let a=r(100,300),b=r(15,a-10);text=`${a} − ${b}`;ans=a-b;}
+        else{let a=r(150,500),b=r(50,a-20);text=`${a} − ${b}`;ans=a-b;}
+      } else {
+        // Enchaînement ou grands nombres
+        const t=r(0,1);
+        if(t===0){let a=r(200,999),b=r(80,a-30);text=`${a} − ${b}`;ans=a-b;}
+        else{let a=r(50,150),b=r(10,40),c=r(5,20);if(a-b-c<0)c=0;text=`${a} − ${b} − ${c}`;ans=a-b-c;}
+      }
+      break;}
+
     case 'sub_all_dec':{
       allowDec=true;
       const mx=[10,20,50,100][lv-1];
@@ -1169,83 +1243,147 @@ function genQ(typeId,subIdx,lv){
       else if(t===2){let a=rd1(0.2,9.9),b=rd1(0.1,a-0.05);if(b>=a)b=a-0.1;text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
       else{let a=rd2(0.05,9.99),b=rd2(0.01,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
       break;}
+
     case 'sub_2_int':{
-      const mx=[9,99,999][subIdx];
-      const m=[Math.min(mx,9),Math.min(mx,50),Math.min(mx,300),mx][lv-1];
-      let a=r(2,m),b=r(1,a);
-      text=`${a} − ${b}`;ans=a-b;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){
+        let a,b;
+        do{a=r(12,Math.min(maxRange,60));b=r(2,a-1);}while(maxRange>9&&a%10<b%10);
+        text=`${a} − ${b}`;ans=a-b;
+      } else if(lv===2){
+        let a=r(20,Math.min(maxRange,80)),b;
+        do{b=r(3,a-1);}while(a%10>=b%10&&maxRange>9);
+        text=`${a} − ${b}`;ans=a-b;
+      } else if(lv===3){
+        let a=r(50,Math.min(maxRange,300)),b=r(15,a-10);
+        text=`${a} − ${b}`;ans=a-b;
+      } else {
+        let a=r(100,Math.min(maxRange,999)),b=r(30,a-20);
+        text=`${a} − ${b}`;ans=a-b;
+      }
+      break;}
+
     case 'sub_mult10':{
-      const mx=[5,10,20,50][lv-1];
-      let b=r(1,mx)*10,a=b+r(1,mx)*10;
-      text=`${a} − ${b}`;ans=a-b;break;}
+      if(lv===1){let b=r(1,4)*10,a=b+r(1,3)*10;text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===2){let b=r(2,7)*10,a=b+r(2,5)*10;text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===3){let b=r(3,12)*10,a=b+r(3,10)*10;text=`${a} − ${b}`;ans=a-b;}
+      else{let b=r(5,30)*10,a=b+r(5,20)*10;text=`${a} − ${b}`;ans=a-b;}
+      break;}
+
     case 'sub_mult5_10':{
-      const mx=[4,8,16,30][lv-1];
-      let b=r(1,mx)*5,a=b+r(1,mx)*5;
-      text=`${a} − ${b}`;ans=a-b;break;}
+      if(lv===1){let b=r(1,5)*5,a=b+r(1,4)*5;text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===2){let b=r(2,9)*5,a=b+r(2,7)*5;text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===3){let b=r(3,16)*5,a=b+r(3,12)*5;text=`${a} − ${b}`;ans=a-b;}
+      else{let b=r(5,30)*5,a=b+r(5,20)*5;text=`${a} − ${b}`;ans=a-b;}
+      break;}
+
     case 'sub_fin9':{
-      const mx=[10,20,50,100][lv-1];
-      let b=r(1,mx)*10-1;if(b<1)b=9;
-      let a=b+r(1,mx);
-      text=`${a} − ${b}`;ans=a-b;break;}
+      if(lv===1){let b=pick([9,19,29]);let a=b+r(2,15);text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===2){let b=pick([9,19,29,39]);let a=b+r(5,25);text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===3){let b=pick([19,29,39,49,59]);let a=b+r(10,40);text=`${a} − ${b}`;ans=a-b;}
+      else{let b=pick([29,39,49,59,69,79,89,99]);let a=b+r(15,60);text=`${a} − ${b}`;ans=a-b;}
+      break;}
+
     case 'sub_fin89':{
-      const mx=[10,20,50,100][lv-1];
-      let b=r(1,mx)*10-r(1,2);if(b<1)b=8;
-      let a=b+r(1,mx);
-      text=`${a} − ${b}`;ans=a-b;break;}
+      if(lv===1){let b=pick([8,9,18,19]);let a=b+r(2,15);text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===2){let b=pick([8,9,18,19,28,29]);let a=b+r(5,25);text=`${a} − ${b}`;ans=a-b;}
+      else if(lv===3){let b=pick([18,19,28,29,38,39,48,49]);let a=b+r(10,40);text=`${a} − ${b}`;ans=a-b;}
+      else{let b=pick([38,39,48,49,58,59,68,69,78,79,88,89]);let a=b+r(15,60);text=`${a} − ${b}`;ans=a-b;}
+      break;}
+
     case 'sub_3_int':{
-      const mx=[9,99,999][subIdx];
-      const m=[Math.min(mx,9),Math.min(mx,30),Math.min(mx,100),mx][lv-1];
-      let a=r(4,m*2||10),b=r(1,Math.floor(a/3)),c=r(1,Math.floor(a/3));
-      if(a-b-c<0)c=0;
-      text=`${a} − ${b} − ${c}`;ans=a-b-c;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){let a=r(10,Math.min(maxRange,30)),b=r(2,5),c=r(2,4);if(a-b-c<0)c=0;text=`${a} − ${b} − ${c}`;ans=a-b-c;}
+      else if(lv===2){let a=r(25,Math.min(maxRange,80)),b=r(5,15),c=r(3,10);if(a-b-c<0)c=0;text=`${a} − ${b} − ${c}`;ans=a-b-c;}
+      else if(lv===3){let a=r(50,Math.min(maxRange,200)),b=r(10,30),c=r(8,25);if(a-b-c<0)c=0;text=`${a} − ${b} − ${c}`;ans=a-b-c;}
+      else{let a=r(100,Math.min(maxRange,500)),b=r(20,60),c=r(15,50);if(a-b-c<0)c=0;text=`${a} − ${b} − ${c}`;ans=a-b-c;}
+      break;}
+
     case 'sub_4_int':{
-      const mx=[9,99,999][subIdx];
-      const m=[Math.min(mx,9),Math.min(mx,20),Math.min(mx,50),mx][lv-1];
-      let a=r(5,m*2||15),b=r(1,Math.floor(a/4)),c=r(1,Math.floor(a/4)),d=r(0,Math.floor(a/4));
-      if(a-b-c-d<0)d=0;
-      text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;break;}
+      const maxRange=[9,99,999][subIdx];
+      if(lv===1){let a=r(10,Math.min(maxRange,25)),b=r(2,4),c=r(2,3),d=r(1,2);if(a-b-c-d<0)d=0;text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;}
+      else if(lv===2){let a=r(30,Math.min(maxRange,80)),b=r(5,12),c=r(4,10),d=r(3,8);if(a-b-c-d<0)d=0;text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;}
+      else if(lv===3){let a=r(60,Math.min(maxRange,200)),b=r(10,25),c=r(8,20),d=r(5,15);if(a-b-c-d<0)d=0;text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;}
+      else{let a=r(120,Math.min(maxRange,500)),b=r(20,50),c=r(15,40),d=r(10,30);if(a-b-c-d<0)d=0;text=`${a} − ${b} − ${c} − ${d}`;ans=a-b-c-d;}
+      break;}
+
     case 'sub_int_dec':{
       allowDec=true;
-      const mx=[10,20,50,100][lv-1];
-      let b=rd1(0.1,Math.min(mx-1,9.9)),a=r(Math.ceil(b)+1,mx);
-      text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;break;}
+      if(lv===1){let a=r(5,20),b=rd1(0.1,Math.min(a-1,4.9));text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===2){let a=r(10,40),b=rd1(0.2,Math.min(a-1,9.9));text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===3){let a=r(20,80),b=rd2(0.05,Math.min(a-1,9.99));text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      else{let a=r(50,200),b=rd2(0.05,Math.min(a-1,99.99));text=`${a} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      break;}
+
     case 'sub_dec_dec':{
       allowDec=true;
-      if(lv===1){let a=rd1(0.2,9.9),b=rd1(0.1,a-0.1);if(b<0.1)b=0.1;text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
-      else if(lv===2){let a=rd1(1,9.9),b=rd1(0.1,a-0.1);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
-      else if(lv===3){let a=rd2(0.5,9.99),b=rd2(0.1,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
-      else{let a=rd2(1,99.99),b=rd2(0.01,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      if(lv===1){let a=rd1(0.3,5.9),b=rd1(0.1,a-0.1);if(b<0.1)b=0.1;text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===2){let a=rd1(1,9.9),b=rd1(0.2,a-0.1);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*10)/10;}
+      else if(lv===3){let a=rd2(1,9.99),b=rd2(0.1,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
+      else{let a=rd2(2,99.99),b=rd2(0.1,a-0.01);text=`${fmt(a)} − ${fmt(b)}`;ans=Math.round((a-b)*100)/100;}
       break;}
 
     case 'mul_all_int':{
-      const [mn,mx]=[[2,5],[2,9],[2,12],[3,25]][lv-1];
-      let a=r(mn,mx),b=r(mn,mx);
-      text=`${a} × ${b}`;ans=a*b;break;}
+      if(lv===1){
+        // Tables simples sans stratégie : × 2,3,4,5
+        let a=pick([2,3,4,5]),b=r(2,6);
+        if(r(0,1))[a,b]=[b,a];text=`${a} × ${b}`;ans=a*b;
+      } else if(lv===2){
+        // Tables 6-9 ou stratégie (6×10-6)
+        let a=pick([6,7,8,9]),b=r(3,9);
+        if(r(0,1))[a,b]=[b,a];text=`${a} × ${b}`;ans=a*b;
+      } else if(lv===3){
+        // Multiplication 2 chiffres × 1 chiffre (25×4, 15×6...)
+        const t=r(0,1);
+        if(t===0){let a=pick([25,15,12,24,32,48]),b=r(3,8);if(r(0,1))text=`${a} × ${b}`;else text=`${b} × ${a}`;ans=a*b;}
+        else{let a=r(11,25),b=r(3,9);if(r(0,1))text=`${a} × ${b}`;else text=`${b} × ${a}`;ans=a*b;}
+      } else {
+        // Grands calculs : 2×2 chiffres ou enchaînement
+        const t=r(0,1);
+        if(t===0){let a=r(12,49),b=r(11,19);if(r(0,1))text=`${a} × ${b}`;else text=`${b} × ${a}`;ans=a*b;}
+        else{let a=r(9,18),b=r(9,18);if(r(0,1))text=`${a} × ${b}`;else text=`${b} × ${a}`;ans=a*b;}
+      }
+      break;}
+
     case 'mul_all_dec':{
       allowDec=true;
       const mx=[5,9,12,20][lv-1];
       if(lv<=2){let a=r(2,mx),b=rd1(0.1,9.9);text=`${a} × ${fmt(b)}`;ans=Math.round(a*b*10)/10;}
       else{let a=r(2,mx),b=rd2(0.1,9.9);text=`${a} × ${fmt(b)}`;ans=Math.round(a*b*100)/100;}
       break;}
+
     case 'mul_tables':{
       const tableN=subIdx<8?subIdx+2:r(2,9);
-      const mx=[5,7,9,10][lv-1];
-      let b=r(1,mx);
+      // Niveau basé sur la plage du facteur
+      const maxB=[5,7,9,10][lv-1];
+      const minB=[1,2,3,4][lv-1];
+      let b=r(minB,maxB);
       text=r(0,1)===0?`${tableN} × ${b}`:`${b} × ${tableN}`;
       ans=tableN*b;break;}
+
     case 'mul_10_100':{
       allowDec=true;
       const muls=[10,100,1000,pick([10,100,1000])];
       const m=muls[subIdx];
       const mx=[99,999,999,999][lv-1];
-      let a=lv<=2?r(1,mx):rd1(0.1,mx);
+      let a=lv<=2?r(2,mx):rd1(0.1,mx);
       text=`${fmt(a)} × ${m}`;ans=Math.round(parseFloat(a)*m*100)/100;break;}
+
     case 'mul_par2':{
-      const mx=[10,25,50,100][lv-1];
-      let a=r(1,mx);text=`${a} × 2`;ans=a*2;break;}
+      // Lv1: petits nombres / Lv2: avec retenue / Lv3: doubles à 2 chiffres / Lv4: grands
+      if(lv===1){let a=r(3,15);text=`${a} × 2`;ans=a*2;}
+      else if(lv===2){let a=r(12,35);text=`${a} × 2`;ans=a*2;}
+      else if(lv===3){let a=r(25,75);text=`${a} × 2`;ans=a*2;}
+      else{let a=r(50,200);text=`${a} × 2`;ans=a*2;}
+      break;}
+
     case 'mul_par4':{
-      const mx=[10,25,50,100][lv-1];
-      let a=r(1,mx);text=`${a} × 4`;ans=a*4;break;}
+      if(lv===1){let a=r(3,10);text=`${a} × 4`;ans=a*4;}
+      else if(lv===2){let a=r(8,20);text=`${a} × 4`;ans=a*4;}
+      else if(lv===3){let a=r(15,40);text=`${a} × 4`;ans=a*4;}
+      else{let a=r(25,100);text=`${a} × 4`;ans=a*4;}
+      break;}
+
     case 'mul_dec_int':{
       allowDec=true;
       const mx=[5,9,12,20][lv-1];
@@ -1253,42 +1391,73 @@ function genQ(typeId,subIdx,lv){
       text=`${fmt(a)} × ${b}`;ans=Math.round(a*b*10)/10;break;}
 
     case 'div_all_int':{
-      const [mn,mx]=[[2,5],[2,9],[2,12],[2,12]][lv-1];
-      const mxQ=[5,9,12,20][lv-1];
-      let d=r(mn,mx),q=r(1,mxQ);
-      text=`${d*q} ÷ ${d}`;ans=q;break;}
+      if(lv===1){
+        // Division exacte par 2,3,4,5 avec petit quotient
+        let d=pick([2,3,4,5]),q=r(2,6);
+        text=`${d*q} ÷ ${d}`;ans=q;
+      } else if(lv===2){
+        // Tables 2-9 quotient moyen
+        let d=r(2,9),q=r(3,9);
+        text=`${d*q} ÷ ${d}`;ans=q;
+      } else if(lv===3){
+        // Division avec décomposition mentale (72÷6, 84÷7...)
+        let d=pick([6,7,8,9]),q=r(4,12);
+        text=`${d*q} ÷ ${d}`;ans=q;
+      } else {
+        // Grand dividende (240÷6, 180÷9...)
+        let d=pick([3,4,5,6,7,8,9]),q=r(10,30);
+        text=`${d*q} ÷ ${d}`;ans=q;
+      }
+      break;}
+
     case 'div_all_dec':{
       allowDec=true;
-      if(lv===1){let d=pick([2,4,5]),q=r(1,9);text=`${d*q} ÷ ${d}`;ans=q;}
+      if(lv===1){let d=pick([2,4,5]),q=r(2,9);text=`${d*q} ÷ ${d}`;ans=q;}
       else if(lv===2){let d=pick([2,4,5,10]),a=r(1,5)*d+r(1,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*10)/10;}
       else if(lv===3){let d=pick([2,4,5,10]),a=r(1,20)*d+r(0,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
       else{let d=pick([2,3,4,5,6,8]),a=r(1,50)*d+r(0,d-1);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
       break;}
+
     case 'div_pair_2':{
-      const mx=[10,20,50,100][lv-1];
-      let q=r(1,mx);text=`${q*2} ÷ 2`;ans=q;break;}
+      if(lv===1){let q=r(2,10);text=`${q*2} ÷ 2`;ans=q;}
+      else if(lv===2){let q=r(8,25);text=`${q*2} ÷ 2`;ans=q;}
+      else if(lv===3){let q=r(20,60);text=`${q*2} ÷ 2`;ans=q;}
+      else{let q=r(50,150);text=`${q*2} ÷ 2`;ans=q;}
+      break;}
+
     case 'div_impair_2':{
       allowDec=true;
-      const mx=[10,20,50,100][lv-1];
-      let a=r(1,mx*2);text=`${a} ÷ 2`;ans=a/2;break;}
+      if(lv===1){let a=r(3,19)*2-1;text=`${a} ÷ 2`;ans=a/2;}
+      else if(lv===2){let a=r(10,39)*2-1;text=`${a} ÷ 2`;ans=a/2;}
+      else if(lv===3){let a=r(30,99)*2-1;text=`${a} ÷ 2`;ans=a/2;}
+      else{let a=r(50,200)*2-1;text=`${a} ÷ 2`;ans=a/2;}
+      break;}
+
     case 'div_248_ent':{
-      const dArr=[[2],[2,4],[2,4,8],[2,4,8]][lv-1];
-      const d=pick(dArr),mx=[5,10,20,50][lv-1];
-      let q=r(1,mx);text=`${q*d} ÷ ${d}`;ans=q;break;}
+      if(lv===1){let d=2,q=r(2,8);text=`${q*d} ÷ ${d}`;ans=q;}
+      else if(lv===2){let d=pick([2,4]),q=r(3,12);text=`${q*d} ÷ ${d}`;ans=q;}
+      else if(lv===3){let d=pick([2,4,8]),q=r(5,20);text=`${q*d} ÷ ${d}`;ans=q;}
+      else{let d=pick([2,4,8]),q=r(10,50);text=`${q*d} ÷ ${d}`;ans=q;}
+      break;}
+
     case 'div_248_dec':{
       allowDec=true;
-      const dArr=[[2],[2,4],[2,4,8],[2,4,8]][lv-1];
-      const d=pick(dArr),mx=[10,20,50,100][lv-1];
-      let a=r(1,mx);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;break;}
+      if(lv===1){let d=2,a=r(3,19);text=`${a} ÷ ${d}`;ans=Math.round(a/d*10)/10;}
+      else if(lv===2){let d=pick([2,4]),a=r(5,39);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
+      else if(lv===3){let d=pick([2,4,8]),a=r(10,79);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
+      else{let d=pick([2,4,8]),a=r(15,199);text=`${a} ÷ ${d}`;ans=Math.round(a/d*100)/100;}
+      break;}
+
     case 'div_quot_rest':{
       dual=true;
-      const [mn,mx]=[[2,5],[2,9],[2,9],[3,12]][lv-1];
-      const mxN=[20,50,100,200][lv-1];
-      let d=r(mn,mx),n=r(d+1,mxN);
-      let q=Math.floor(n/d),rest=n%d;
-      text=`${n} ÷ ${d}`;ans=q;ans2=rest;
+      // Niveau basé sur taille diviseur et dividende
+      if(lv===1){let d=pick([2,3]),n=r(d+1,20);let q=Math.floor(n/d),rest=n%d;text=`${n} ÷ ${d}`;ans=q;ans2=rest;}
+      else if(lv===2){let d=r(2,6),n=r(d+1,50);let q=Math.floor(n/d),rest=n%d;text=`${n} ÷ ${d}`;ans=q;ans2=rest;}
+      else if(lv===3){let d=r(3,9),n=r(10,100);let q=Math.floor(n/d),rest=n%d;text=`${n} ÷ ${d}`;ans=q;ans2=rest;}
+      else{let d=r(4,12),n=r(20,200);let q=Math.floor(n/d),rest=n%d;text=`${n} ÷ ${d}`;ans=q;ans2=rest;}
       hint='Quotient et reste';break;}
-    default: text='1 + 1';ans=2;
+
+    default: text='2 + 3';ans=5;
   }
 
   return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false};
