@@ -454,6 +454,14 @@ body {
 .np-btn.ok { background: linear-gradient(135deg, var(--accent4), var(--accent3)); color: #001a00; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.92rem; grid-column: span 3; padding: 14px; }
 .active-input-label { font-size: 0.68rem; color: var(--accent2); text-align: center; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 
+
+/* ===== FRACTION DISPLAY ===== */
+.frac-svg { overflow: visible; }
+.frac-num, .frac-den { font-family: 'Fredoka One', cursive; font-size: 2rem; fill: var(--text); }
+.frac-bar { stroke: var(--text); stroke-width: 2.5; stroke-linecap: round; }
+.frac-op { font-family: 'Fredoka One', cursive; font-size: 2.2rem; fill: var(--text); }
+.frac-eq { font-family: 'Fredoka One', cursive; font-size: 2.2rem; fill: var(--muted); }
+.frac-blank { font-family: 'Fredoka One', cursive; font-size: 2.2rem; fill: var(--accent2); }
 /* numpad always visible */
 
 /* Results */
@@ -670,6 +678,15 @@ body.cat-div { --clr-active: var(--div); }
     <div class="question-hint" id="qHint"></div>
   </div>
 
+  <!-- Fraction display -->
+  <div id="fracDisplay" style="display:none; width:100%; margin-bottom:16px;">
+    <div class="question-card" style="padding:20px 16px; min-height:130px;">
+      <div class="question-label" id="fracQLabel">Question 1</div>
+      <div id="fracSvgWrap" style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;"></div>
+      <div class="question-hint" id="fracHint" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
   <!-- Maison des nombres display -->
   <div id="maisonDisplay" style="display:none; width:100%; margin-bottom:16px; text-align:center;">
     <svg id="maisonSvg" viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg"
@@ -784,50 +801,63 @@ body.cat-div { --clr-active: var(--div); }
 // ================================================================
 const TYPES = {
   add: [
-    { id:'add_all_int',   name:'Additions variées (entiers)',           sub:null },
-    { id:'add_all_dec',   name:'Additions variées (décimaux)',          sub:null },
-    { id:'add_2_int',     name:'Additionner 2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
-    { id:'add_complement',name:'Trouver un complément (à 10, 100 ou 1000)', sub:['à 10','à 100','à 1000'] },
-    { id:'add_maison',    name:'Maisons des nombres (de 3 à 10)',        sub:null },
-    { id:'add_mult10',    name:'Additionner des multiples de 10',        sub:null },
-    { id:'add_mult5_10',  name:'Additionner des multiples de 5 ou 10', sub:null },
-    { id:'add_fin9',      name:'Additionner un nombre finissant par 9', sub:null },
-    { id:'add_fin89',     name:'Additionner un nombre finissant par 8 ou 9', sub:null },
-    { id:'add_3_int',     name:'Additionner 3 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
-    { id:'add_4_int',     name:'Additionner 4 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
-    { id:'add_int_dec',   name:'Additionner un entier et un décimal',   sub:null },
-    { id:'add_dec_dec',   name:'Additionner des décimaux',              sub:null },
+    { id:'add_all_int',   name:'Additions variées (entiers)',                                    sub:null },
+    { id:'add_all_dec',   name:'Additions variées (décimaux)',                                   sub:null },
+    { id:'add_2_int',     name:'Additionner 2 entiers (< 10, < 100 ou < 1000)',                  sub:['< 10','< 100','< 1000'] },
+    { id:'add_complement',name:'Trouver un complément (à 10, 100 ou 1000)',                      sub:['à 10','à 100','à 1000'] },
+    { id:'add_maison',    name:'Maisons des nombres (de 3 à 10)',                                sub:null },
+    { id:'add_mult10',    name:'Additionner des multiples de 10',                                sub:null },
+    { id:'add_mult5_10',  name:'Additionner des multiples de 5 ou 10',                          sub:null },
+    { id:'add_fin9',      name:'Additionner un nombre finissant par 9',                         sub:null },
+    { id:'add_fin89',     name:'Additionner un nombre finissant par 8 ou 9',                    sub:null },
+    { id:'add_3_int',     name:'Additionner 3 entiers (< 10, < 100 ou < 1000)',                 sub:['< 10','< 100','< 1000'] },
+    { id:'add_4_int',     name:'Additionner 4 entiers (< 10, < 100 ou < 1000)',                 sub:['< 10','< 100','< 1000'] },
+    { id:'add_int_dec',   name:'Additionner un entier et un décimal',                           sub:null },
+    { id:'add_dec_dec',   name:'Additionner des décimaux',                                      sub:null },
+    { id:'add_frac',      name:'Additionner des fractions (même dénominateur)',                  sub:['Dén. ≤ 5','Dén. ≤ 10','Dén. ≤ 20','Dén. multiples'], frac:true },
+    { id:'add_trou',      name:'Équation à trou — addition (□ + 7 = 15)',                       sub:null },
   ],
   sub: [
-    { id:'sub_all_int',   name:'Soustractions variées (entiers)',       sub:null },
-    { id:'sub_all_dec',   name:'Soustractions variées (décimaux)',      sub:null },
-    { id:'sub_2_int',     name:'Soustraire 2 entiers (< 10, < 100 ou < 1000)',    sub:['< 10','< 100','< 1000'] },
-    { id:'sub_mult10',    name:'Soustraire des multiples de 10',        sub:null },
-    { id:'sub_mult5_10',  name:'Soustraire des multiples de 5 ou 10',  sub:null },
-    { id:'sub_fin9',      name:'Soustraire un nombre finissant par 9',  sub:null },
-    { id:'sub_fin89',     name:'Soustraire un nombre finissant par 8 ou 9', sub:null },
-    { id:'sub_3_int',     name:'Soustraire 3 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
-    { id:'sub_4_int',     name:'Soustraire 4 entiers (< 10, < 100 ou < 1000)', sub:['< 10','< 100','< 1000'] },
-    { id:'sub_int_dec',   name:'Soustraire un entier et un décimal',    sub:null },
-    { id:'sub_dec_dec',   name:'Soustraire des décimaux',               sub:null },
+    { id:'sub_all_int',   name:'Soustractions variées (entiers)',                                sub:null },
+    { id:'sub_all_dec',   name:'Soustractions variées (décimaux)',                               sub:null },
+    { id:'sub_2_int',     name:'Soustraire 2 entiers (< 10, < 100 ou < 1000)',                  sub:['< 10','< 100','< 1000'] },
+    { id:'sub_mult10',    name:'Soustraire des multiples de 10',                                 sub:null },
+    { id:'sub_mult5_10',  name:'Soustraire des multiples de 5 ou 10',                           sub:null },
+    { id:'sub_fin9',      name:'Soustraire un nombre finissant par 9',                          sub:null },
+    { id:'sub_fin89',     name:'Soustraire un nombre finissant par 8 ou 9',                     sub:null },
+    { id:'sub_3_int',     name:'Soustraire 3 entiers (< 10, < 100 ou < 1000)',                  sub:['< 10','< 100','< 1000'] },
+    { id:'sub_4_int',     name:'Soustraire 4 entiers (< 10, < 100 ou < 1000)',                  sub:['< 10','< 100','< 1000'] },
+    { id:'sub_int_dec',   name:'Soustraire un entier et un décimal',                            sub:null },
+    { id:'sub_dec_dec',   name:'Soustraire des décimaux',                                       sub:null },
+    { id:'sub_frac',      name:'Soustraire des fractions (même dénominateur)',                   sub:['Dén. ≤ 5','Dén. ≤ 10','Dén. ≤ 20'], frac:true },
+    { id:'sub_trou',      name:'Équation à trou — soustraction (23 − □ = 9)',                   sub:null },
   ],
   mul: [
-    { id:'mul_all_int',   name:'Multiplications variées (entiers)',     sub:null },
-    { id:'mul_all_dec',   name:'Multiplications variées (décimaux)',    sub:null },
-    { id:'mul_tables',    name:'Tables de multiplication (×2 à ×9)',   sub:['×2','×3','×4','×5','×6','×7','×8','×9','Toutes'] },
-    { id:'mul_10_100',    name:'Multiplier par 10, 100 ou 1000',        sub:['× 10','× 100','× 1000','Au hasard'] },
-    { id:'mul_par2',      name:'Multiplier par 2',                      sub:null },
-    { id:'mul_par4',      name:'Multiplier par 4',                      sub:null },
-    { id:'mul_dec_int',   name:'Multiplier un décimal par un entier',   sub:null },
+    { id:'mul_all_int',    name:'Multiplications variées (entiers)',                             sub:null },
+    { id:'mul_all_dec',    name:'Multiplications variées (décimaux)',                            sub:null },
+    { id:'mul_tables',     name:'Tables de multiplication (×2 à ×12)',                          sub:['×2','×3','×4','×5','×6','×7','×8','×9','×10','×11','×12','×25','Toutes'] },
+    { id:'mul_10_100',     name:'Multiplier par 10, 100 ou 1000',                               sub:['× 10','× 100','× 1000','Au hasard'] },
+    { id:'mul_par2',       name:'Multiplier par 2 (doubler)',                                   sub:null },
+    { id:'mul_par4',       name:'Multiplier par 4',                                             sub:null },
+    { id:'mul_par5_25_50', name:'Multiplier par 5, 25 ou 50',                                   sub:['× 5','× 25','× 50','Au hasard'] },
+    { id:'mul_derivee',    name:'Multiplications dérivées (6×30, 7×400…)',                      sub:null },
+    { id:'mul_distrib',    name:'Distributivité simple (12×9 = 12×10−12)',                      sub:null },
+    { id:'mul_dec_int',    name:'Multiplier un décimal par un entier',                          sub:null },
+    { id:'mul_trou',       name:'Équation à trou — multiplication (4 × □ = 36)',                sub:null },
   ],
   div: [
-    { id:'div_all_int',   name:'Divisions variées (entiers)',           sub:null },
-    { id:'div_all_dec',   name:'Divisions variées (décimaux)',          sub:null },
-    { id:'div_pair_2',    name:'Diviser un nombre pair par 2',          sub:null },
-    { id:'div_impair_2',  name:'Diviser par 2 (pair ou impair)',        sub:null },
-    { id:'div_248_ent',   name:'Diviser par 2, 4 ou 8 (résultat entier)', sub:null },
-    { id:'div_248_dec',   name:'Diviser par 2, 4 ou 8 (avec décimaux)', sub:null },
-    { id:'div_quot_rest', name:'Quotient et reste (division euclidienne)', sub:null, dual:true },
+    { id:'div_all_int',    name:'Divisions variées (entiers)',                                   sub:null },
+    { id:'div_all_dec',    name:'Divisions variées (décimaux)',                                  sub:null },
+    { id:'div_pair_2',     name:'Diviser un nombre pair par 2',                                 sub:null },
+    { id:'div_impair_2',   name:'Diviser par 2 (pair ou impair)',                               sub:null },
+    { id:'div_248_ent',    name:'Diviser par 2, 4 ou 8 (résultat entier)',                      sub:null },
+    { id:'div_248_dec',    name:'Diviser par 2, 4 ou 8 (avec décimaux)',                        sub:null },
+    { id:'div_10_100',     name:'Diviser par 10, 100 ou 1000',                                  sub:['÷ 10','÷ 100','÷ 1000','Au hasard'] },
+    { id:'div_derivee',    name:'Divisions dérivées des tables (420 ÷ 7, 360 ÷ 9…)',           sub:null },
+    { id:'div_5_25_50',    name:'Diviser par 5, 25 ou 50',                                      sub:['÷ 5','÷ 25','÷ 50','Au hasard'] },
+    { id:'div_moitie',     name:'Trouver la moitié (entiers et décimaux)',                      sub:null },
+    { id:'div_quot_rest',  name:'Quotient et reste (division euclidienne)',                      sub:null, dual:true },
+    { id:'div_trou',       name:'Équation à trou — division (30 ÷ □ = 5)',                      sub:null },
   ],
 };
 
@@ -1353,8 +1383,13 @@ function genQ(typeId,subIdx,lv){
       break;}
 
     case 'mul_tables':{
-      const tableN=subIdx<8?subIdx+2:r(2,9);
-      // Niveau basé sur la plage du facteur
+      // subIdx: 0=×2,1=×3,...,8=×10,9=×11,10=×12,11=×25,12=Toutes
+      let tableN;
+      if(subIdx<9) tableN=subIdx+2;           // ×2 à ×10
+      else if(subIdx===9) tableN=11;
+      else if(subIdx===10) tableN=12;
+      else if(subIdx===11) tableN=25;
+      else tableN=pick([2,3,4,5,6,7,8,9,10,11,12]);
       const maxB=[5,7,9,10][lv-1];
       const minB=[1,2,3,4][lv-1];
       let b=r(minB,maxB);
@@ -1457,10 +1492,286 @@ function genQ(typeId,subIdx,lv){
       else{let d=r(4,12),n=r(20,200);let q=Math.floor(n/d),rest=n%d;text=`${n} ÷ ${d}`;ans=q;ans2=rest;}
       hint='Quotient et reste';break;}
 
+    // ---- TABLES ÉTENDUES ×10 ×11 ×12 ×25 (déjà gérées par mul_tables via subIdx) ----
+    // mul_tables: subIdx 0-11 = ×2..×12,×25 ; 12 = Toutes
+
+    // ---- MULTIPLICATIONS PAR 5 / 25 / 50 ----
+    case 'mul_par5_25_50':{
+      const mults=[5,25,50,pick([5,25,50])];
+      const m=mults[subIdx];
+      if(lv===1){let a=pick([2,4,6,8,10,12,14,16,20]);text=`${a} × ${m}`;ans=a*m;}
+      else if(lv===2){let a=r(2,20);text=`${a} × ${m}`;ans=a*m;}
+      else if(lv===3){let a=r(5,40);text=`${a} × ${m}`;ans=a*m;}
+      else{let a=r(8,80);text=`${a} × ${m}`;ans=a*m;}
+      break;}
+
+    // ---- MULTIPLICATIONS DÉRIVÉES (6×30, 7×400…) ----
+    case 'mul_derivee':{
+      if(lv===1){
+        // entier × multiple de 10 simple
+        let a=r(2,9), b=pick([10,20,30,40,50]);
+        if(r(0,1)){[a,b]=[b,a];}text=`${a} × ${b}`;ans=a*b;
+      } else if(lv===2){
+        let a=r(2,9), b=pick([30,40,60,70,80,90,200,300,400]);
+        if(r(0,1)){[a,b]=[b,a];}text=`${a} × ${b}`;ans=a*b;
+      } else if(lv===3){
+        let a=r(3,9), b=pick([500,600,700,800,900,2000,3000,4000]);
+        if(r(0,1)){[a,b]=[b,a];}text=`${a} × ${b}`;ans=a*b;
+      } else {
+        let a=r(4,9), b=pick([2500,5000,8000,50,125,250]);
+        if(r(0,1)){[a,b]=[b,a];}text=`${a} × ${b}`;ans=a*b;
+      }
+      break;}
+
+    // ---- DISTRIBUTIVITÉ SIMPLE ----
+    case 'mul_distrib':{
+      // Lv1: n×9 = n×10−n  / Lv2: n×9,n×11 / Lv3: n×19,n×21 / Lv4: 2 chiffres×près de 10
+      if(lv===1){
+        let a=r(3,9);text=`${a} × 9`;ans=a*9;hint=`Astuce : ${a}×10 − ${a}`;
+      } else if(lv===2){
+        let a=r(4,12), op=pick([9,11]);
+        text=`${a} × ${op}`;ans=a*op;
+        hint=op===9?`Astuce : ${a}×10 − ${a}`:`Astuce : ${a}×10 + ${a}`;
+      } else if(lv===3){
+        let a=r(4,15), op=pick([9,11,19,21]);
+        text=`${a} × ${op}`;ans=a*op;
+        hint=`Astuce : décomposer ${op}`;
+      } else {
+        let a=r(10,25), op=pick([9,11,19,21,99,101]);
+        text=`${a} × ${op}`;ans=a*op;
+        hint=`Astuce : décomposer ${op}`;
+      }
+      break;}
+
+    // ---- DIVISION ÷ 10 / 100 / 1000 ----
+    case 'div_10_100':{
+      const divOpts=[10,100,1000,pick([10,100,1000])];
+      const d=divOpts[subIdx];
+      if(lv===1){
+        // Résultat toujours entier : dividende = d × q
+        let q=r(2,50);text=`${q*d} ÷ ${d}`;ans=q;
+      } else if(lv===2){
+        let q=r(5,200);text=`${q*d} ÷ ${d}`;ans=q;
+      } else if(lv===3){
+        // Résultat peut être décimal (ex: 370÷100=3,7)
+        allowDec=true;
+        let a=r(1,999);text=`${a} ÷ ${d}`;ans=Math.round(a/d*1000)/1000;
+        if(Number.isInteger(ans))allowDec=false;
+      } else {
+        allowDec=true;
+        let a=r(10,9999);text=`${a} ÷ ${d}`;ans=Math.round(a/d*1000)/1000;
+        if(Number.isInteger(ans))allowDec=false;
+      }
+      break;}
+
+    // ---- DIVISIONS DÉRIVÉES DES TABLES (420÷7, 360÷9…) ----
+    case 'div_derivee':{
+      if(lv===1){
+        // dividende = table × 10
+        let d=pick([2,3,4,5]),q=r(2,9);
+        text=`${d*q*10} ÷ ${d}`;ans=q*10;
+      } else if(lv===2){
+        let d=r(2,9),q=r(2,9);
+        text=`${d*q*10} ÷ ${d}`;ans=q*10;
+      } else if(lv===3){
+        let d=r(3,9),q=r(2,9),mult=pick([10,100]);
+        text=`${d*q*mult} ÷ ${d}`;ans=q*mult;
+      } else {
+        let d=r(4,9),q=r(3,12),mult=pick([100,1000]);
+        text=`${d*q*mult} ÷ ${d}`;ans=q*mult;
+      }
+      break;}
+
+    // ---- DIVISER PAR 5 / 25 / 50 ----
+    case 'div_5_25_50':{
+      const divs=[5,25,50,pick([5,25,50])];
+      const d=divs[subIdx];
+      if(lv===1){let q=r(2,10);text=`${q*d} ÷ ${d}`;ans=q;}
+      else if(lv===2){let q=r(2,20);text=`${q*d} ÷ ${d}`;ans=q;}
+      else if(lv===3){let q=r(3,40);text=`${q*d} ÷ ${d}`;ans=q;}
+      else{let q=r(5,80);text=`${q*d} ÷ ${d}`;ans=q;}
+      break;}
+
+    // ---- MOITIÉ DE ----
+    case 'div_moitie':{
+      if(lv===1){
+        // Moitié d'un entier pair ≤ 40
+        let a=r(2,20)*2;text=`Moitié de ${a}`;ans=a/2;
+      } else if(lv===2){
+        // Moitié d'un entier pair ≤ 200
+        let a=r(2,100)*2;text=`Moitié de ${a}`;ans=a/2;
+      } else if(lv===3){
+        // Moitié d'un entier ≤ 1000 (résultat parfois décimal)
+        let a=r(2,500)*2;
+        if(r(0,1)){a=r(5,300)*2+1;allowDec=true;}
+        text=`Moitié de ${a}`;ans=a/2;
+      } else {
+        // Moitié d'un décimal simple
+        allowDec=true;
+        let a=rd1(1.0,9.8);let aa=Math.round(a*10)/10;
+        text=`Moitié de ${fmt(aa)}`;ans=Math.round(aa/2*100)/100;
+      }
+      break;}
+
+    // ---- FRACTIONS — ADDITION (même dénominateur + multiples) ----
+    case 'add_frac':{
+      // subIdx 0=den≤5, 1=den≤10, 2=den≤20, 3=dénominateurs multiples
+      const isMult=(subIdx===3);
+      let den,numA,numB;
+      if(!isMult){
+        const maxDens=[[2,3,4,5],[2,3,4,5,6,7,8,10],[2,3,4,5,6,7,8,10,12,15,20]];
+        const denList=maxDens[Math.min(subIdx,2)];
+        den=pick(denList);
+        if(lv===1){numA=r(1,Math.min(den-1,3));numB=r(1,Math.min(den-numA,3));}
+        else if(lv===2){numA=r(1,den-1);numB=r(1,den-numA);}
+        else if(lv===3){numA=r(1,den);numB=r(1,den);}// résultat peut dépasser 1
+        else{numA=r(1,den*2);numB=r(1,den*2);}
+      } else {
+        // dénominateurs multiples : 1/2+1/4, 1/3+1/6…
+        const pairs=[[2,4],[2,6],[3,6],[4,8],[2,8],[3,9],[4,12],[5,10]];
+        const [d1,d2]=pick(pairs);
+        den=d2; // on ramène au grand dénominateur
+        numA=r(1,d1)*(d2/d1); // converti
+        numB=r(1,d2-1);
+        // affichage original
+        const origA=numA/(d2/d1); const origD1=d1;
+        const origB=numB; const origD2=d2;
+        ans=numA+numB; // sur den=d2
+        // Simplify answer
+        function gcd2(a,b){return b===0?a:gcd2(b,a%b);}
+        const g=gcd2(ans,d2);
+        text='FRAC_MULT'; // signal
+        return {text:'FRAC_MULT', answer:ans, answer2:null,
+          hint:'', isDual:false, allowDec:false, isMaison:false,
+          isFrac:true, fracDisplay:{type:'add_mult',
+            n1:origA,d1:origD1,n2:origB,d2:origD2,
+            ansNum:ans/g,ansDen:d2/g}};
+      }
+      function gcd2(a,b){return b===0?a:gcd2(b,a%b);}
+      ans=numA+numB;
+      const g=gcd2(ans,den);
+      return {text:'FRAC', answer:ans, answer2:null,
+        hint:'', isDual:false, allowDec:false, isMaison:false,
+        isFrac:true, fracDisplay:{type:'add',n1:numA,d1:den,n2:numB,d2:den,
+          ansNum:ans/g,ansDen:den/g}};
+    }
+
+    // ---- FRACTIONS — SOUSTRACTION (même dénominateur) ----
+    case 'sub_frac':{
+      const maxDens=[[2,3,4,5],[2,3,4,5,6,7,8,10],[2,3,4,5,6,7,8,10,12,15,20]];
+      const denList=maxDens[Math.min(subIdx,2)];
+      let den=pick(denList),numA,numB;
+      if(lv===1){numA=r(2,Math.min(den,4));numB=r(1,numA-1);}
+      else if(lv===2){numA=r(2,den);numB=r(1,numA-1);}
+      else{numA=r(2,den*2);numB=r(1,numA-1);}// résultat peut être fraction
+      function gcd2(a,b){return b===0?a:gcd2(b,a%b);}
+      ans=numA-numB;
+      const g=gcd2(ans,den);
+      return {text:'FRAC', answer:ans, answer2:null,
+        hint:'', isDual:false, allowDec:false, isMaison:false,
+        isFrac:true, fracDisplay:{type:'sub',n1:numA,d1:den,n2:numB,d2:den,
+          ansNum:ans/g,ansDen:den/g}};
+    }
+
+    // ---- ÉQUATIONS À TROU — ADDITION ----
+    case 'add_trou':{
+      if(lv===1){
+        let b=r(2,9),res=r(b+2,15);let a=res-b;
+        if(r(0,1)){text=`□ + ${b}`;ans=a;}else{text=`${a} + □`;ans=b;}
+        text+=` = ${res}`;
+      } else if(lv===2){
+        let b=r(5,30),res=r(b+5,60);let a=res-b;
+        if(r(0,1)){text=`□ + ${b}`;ans=a;}else{text=`${a} + □`;ans=b;}
+        text+=` = ${res}`;
+      } else if(lv===3){
+        const tgt=pick([100,200,500,1000]);
+        let a=r(10,tgt-10);
+        if(r(0,1)){text=`□ + ${a} = ${tgt}`;ans=tgt-a;}
+        else{text=`${a} + □ = ${tgt}`;ans=tgt-a;}
+      } else {
+        allowDec=true;
+        let b=rd1(0.5,5.0),res=r(5,20);let a=Math.round((res-b)*10)/10;
+        if(r(0,1)){text=`□ + ${fmt(b)}`;ans=a;}else{text=`${fmt(a)} + □`;ans=b;}
+        text+=` = ${res}`;
+      }
+      break;}
+
+    // ---- ÉQUATIONS À TROU — SOUSTRACTION ----
+    case 'sub_trou':{
+      if(lv===1){
+        let a=r(8,20),b=r(2,a-2);
+        const pos=r(0,1);
+        if(pos===0){text=`${a} − □ = ${a-b}`;ans=b;}
+        else{text=`□ − ${b} = ${a-b}`;ans=a;}
+      } else if(lv===2){
+        let a=r(20,80),b=r(5,a-5);
+        const pos=r(0,1);
+        if(pos===0){text=`${a} − □ = ${a-b}`;ans=b;}
+        else{text=`□ − ${b} = ${a-b}`;ans=a;}
+      } else if(lv===3){
+        let a=r(100,500),b=r(20,a-20);
+        const pos=r(0,1);
+        if(pos===0){text=`${a} − □ = ${a-b}`;ans=b;}
+        else{text=`□ − ${b} = ${a-b}`;ans=a;}
+      } else {
+        allowDec=true;
+        let a=r(10,50),b=rd1(0.5,5.0);let res=Math.round((a-b)*10)/10;
+        const pos=r(0,1);
+        if(pos===0){text=`${a} − □ = ${fmt(res)}`;ans=b;}
+        else{text=`□ − ${fmt(b)} = ${fmt(res)}`;ans=a;}
+      }
+      break;}
+
+    // ---- ÉQUATIONS À TROU — MULTIPLICATION ----
+    case 'mul_trou':{
+      if(lv===1){
+        let a=pick([2,3,4,5]),b=r(2,6);
+        if(r(0,1)){text=`${a} × □ = ${a*b}`;ans=b;}
+        else{text=`□ × ${a} = ${a*b}`;ans=b;}
+      } else if(lv===2){
+        let a=r(2,9),b=r(2,9);
+        if(r(0,1)){text=`${a} × □ = ${a*b}`;ans=b;}
+        else{text=`□ × ${b} = ${a*b}`;ans=a;}
+      } else if(lv===3){
+        let a=r(2,12),b=r(3,12);
+        if(r(0,1)){text=`${a} × □ = ${a*b}`;ans=b;}
+        else{text=`□ × ${b} = ${a*b}`;ans=a;}
+      } else {
+        let a=r(5,25),b=r(4,20);
+        if(r(0,1)){text=`${a} × □ = ${a*b}`;ans=b;}
+        else{text=`□ × ${b} = ${a*b}`;ans=a;}
+      }
+      break;}
+
+    // ---- ÉQUATIONS À TROU — DIVISION ----
+    case 'div_trou':{
+      if(lv===1){
+        let d=pick([2,3,4,5]),q=r(2,6);
+        const pos=r(0,1);
+        if(pos===0){text=`${d*q} ÷ □ = ${q}`;ans=d;}
+        else{text=`□ ÷ ${d} = ${q}`;ans=d*q;}
+      } else if(lv===2){
+        let d=r(2,9),q=r(2,9);
+        const pos=r(0,1);
+        if(pos===0){text=`${d*q} ÷ □ = ${q}`;ans=d;}
+        else{text=`□ ÷ ${d} = ${q}`;ans=d*q;}
+      } else if(lv===3){
+        let d=r(3,12),q=r(3,12);
+        const pos=r(0,1);
+        if(pos===0){text=`${d*q} ÷ □ = ${q}`;ans=d;}
+        else{text=`□ ÷ ${d} = ${q}`;ans=d*q;}
+      } else {
+        let d=r(5,20),q=r(5,20);
+        const pos=r(0,1);
+        if(pos===0){text=`${d*q} ÷ □ = ${q}`;ans=d;}
+        else{text=`□ ÷ ${d} = ${q}`;ans=d*q;}
+      }
+      break;}
+
     default: text='2 + 3';ans=5;
   }
 
-  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false};
+  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false, isFrac:false};
 }
 
 // ================================================================
@@ -1523,6 +1834,74 @@ function startGame(){
   setTimeout(showQuestion,300);
 }
 
+// ===== FRACTION SVG BUILDER =====
+function makeFracSvg(num, den, color) {
+  // Returns an SVG element showing num over den with a bar
+  const ns='http://www.w3.org/2000/svg';
+  const w=54, h=72;
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+  svg.style.overflow='visible';
+  function t(x,y,txt,fs,fill){
+    const el=document.createElementNS(ns,'text');
+    el.setAttribute('x',x);el.setAttribute('y',y);
+    el.setAttribute('text-anchor','middle');el.setAttribute('dominant-baseline','middle');
+    el.setAttribute('font-family',"'Fredoka One',cursive");
+    el.setAttribute('font-size',fs);el.setAttribute('fill',fill||'var(--text)');
+    el.textContent=txt;return el;
+  }
+  svg.appendChild(t(w/2, 18, String(num), 26, color||'var(--text)'));
+  const line=document.createElementNS(ns,'line');
+  line.setAttribute('x1',4);line.setAttribute('y1',36);
+  line.setAttribute('x2',w-4);line.setAttribute('y2',36);
+  line.setAttribute('stroke',color||'var(--text)');line.setAttribute('stroke-width','2.5');
+  line.setAttribute('stroke-linecap','round');
+  svg.appendChild(line);
+  svg.appendChild(t(w/2, 56, String(den), 26, color||'var(--text)'));
+  return svg;
+}
+
+function makeTextSvg(txt, color, fontSize) {
+  const ns='http://www.w3.org/2000/svg';
+  const w=48,h=72;
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.setAttribute('width',w);svg.setAttribute('height',h);
+  svg.style.overflow='visible';
+  const el=document.createElementNS(ns,'text');
+  el.setAttribute('x',w/2);el.setAttribute('y',h/2);
+  el.setAttribute('text-anchor','middle');el.setAttribute('dominant-baseline','middle');
+  el.setAttribute('font-family',"'Fredoka One',cursive");
+  el.setAttribute('font-size',fontSize||30);
+  el.setAttribute('fill',color||'var(--text)');
+  el.textContent=txt;svg.appendChild(el);
+  return svg;
+}
+
+function makeAnswerBoxSvg() {
+  // Shows "□" as the unknown
+  return makeTextSvg('?', 'var(--accent2)', 34);
+}
+
+function renderFracDisplay(q) {
+  const wrap = document.getElementById('fracSvgWrap');
+  wrap.innerHTML='';
+  const fd = q.fracDisplay;
+  const op = q.typeId && q.typeId.startsWith('sub') ? '−' : '+';
+
+  // First fraction
+  wrap.appendChild(makeFracSvg(fd.n1, fd.d1));
+  // Operator
+  wrap.appendChild(makeTextSvg(op, 'var(--muted)', 30));
+  // Second fraction
+  wrap.appendChild(makeFracSvg(fd.n2, fd.d2));
+  // Equals
+  wrap.appendChild(makeTextSvg('=', 'var(--muted)', 30));
+  // Answer box (fraction with ? on top)
+  wrap.appendChild(makeFracSvg('?', fd.ansDen, 'var(--accent2)'));
+}
+
 function isTouchDevice(){
   return /Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent)||('ontouchstart' in window);
 }
@@ -1538,13 +1917,19 @@ function showQuestion(){
   document.getElementById('progressFill').style.width=(curQ/nbQ*100)+'%';
 
   const isMaison = q.isMaison;
-  document.getElementById('questionCard').style.display = isMaison ? 'none' : '';
+  const isFrac = q.isFrac;
+  document.getElementById('questionCard').style.display = (isMaison||isFrac) ? 'none' : '';
   document.getElementById('maisonDisplay').style.display = isMaison ? 'block' : 'none';
+  document.getElementById('fracDisplay').style.display = isFrac ? 'block' : 'none';
 
   if(isMaison){
     document.getElementById('maisonQLabel').textContent = `QUESTION ${curQ+1}`;
     document.getElementById('maisonTgtText').textContent = q.maisonTgt;
     document.getElementById('maisonCalcText').textContent = q.maisonDisplay;
+  } else if(isFrac){
+    document.getElementById('fracQLabel').textContent = `Question ${curQ+1}`;
+    document.getElementById('fracHint').textContent = q.hint||'';
+    renderFracDisplay(q);
   } else {
     document.getElementById('qLabel').textContent=`Question ${curQ+1}`;
     document.getElementById('qText').textContent=q.text;
@@ -1596,7 +1981,7 @@ function updateTimerUI(t,total){
 }
 
 function isAutoSubmitType(){
-  return selTypeId==='add_maison'||selTypeId==='mul_tables';
+  return (selTypeId==='add_maison'||selTypeId==='mul_tables')&&!questions[curQ]?.isFrac;
 }
 
 function checkAutoSubmit(){
@@ -1676,8 +2061,13 @@ function maisonFeedback(ok){
   document.querySelector('#maisonSvg polygon').setAttribute('fill', ok?'rgba(107,203,119,0.2)':'rgba(255,107,107,0.2)');
 }
 
+function fracLabel(q){
+  const fd=q.fracDisplay;
+  const op=q.text==='FRAC'&&fd.type==='sub'?'−':'+';
+  return `${fd.n1}/${fd.d1} ${op} ${fd.n2}/${fd.d2}`;
+}
 function recordAns(given,ok,skipped){
-  answers.push({q:questions[curQ].text,ans:questions[curQ].answer,ans2:questions[curQ].answer2,given,ok,skipped,isDual:questions[curQ].isDual});
+  const cq=questions[curQ]; answers.push({q:cq.isFrac?fracLabel(cq):cq.text, ans:cq.answer,ans2:cq.answer2,given,ok,skipped,isDual:cq.isDual});
 }
 
 function nextQ(){curQ++;if(curQ>=nbQ)endGame();else showQuestion();}
