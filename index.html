@@ -463,6 +463,65 @@ body {
 .frac-eq { font-family: 'Fredoka One', cursive; font-size: 2.2rem; fill: var(--muted); }
 .frac-blank { font-family: 'Fredoka One', cursive; font-size: 2.2rem; fill: var(--accent2); }
 /* numpad always visible */
+/* ===== AUTRES : SECTION HEADERS ===== */
+.autres-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--clr-active, var(--muted));
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding-left: 2px;
+}
+.autres-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.autres-type-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 8px 11px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.13s;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+.autres-type-card:hover { background: var(--card2); }
+.autres-type-card.selected { border-color: var(--clr-active, var(--accent4)); color: var(--clr-active, var(--accent4)); background: var(--card2); }
+
+/* ===== AUTRES TYPES DE CALCULS BUTTON ===== */
+.autres-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px 20px;
+  cursor: pointer;
+  border: 2px solid var(--surface);
+  transition: all 0.18s ease;
+  margin-top: 14px;
+  position: relative;
+}
+.autres-btn:hover { border-color: var(--muted); transform: translateY(-2px); }
+.autres-btn:active { transform: scale(0.98); }
+.autres-title {
+  font-size: 1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+}
+.autres-arrow { font-size: 1.8rem; color: var(--muted); font-family: 'Fredoka One', cursive; position: absolute; right: 18px; }
 
 /* Results */
 .result-hero {
@@ -577,34 +636,30 @@ body.cat-proport { --clr-active: #0652dd; }
       <span class="cat-icon">➗</span>
       <div class="cat-name">Division</div>
     </div>
-    <div class="cat-card" data-cat="frac" onclick="selectCat('frac')">
-      <span class="cat-icon">½</span>
-      <div class="cat-name">Fractions</div>
-    </div>
-    <div class="cat-card" data-cat="mesure" onclick="selectCat('mesure')">
-      <span class="cat-icon">📏</span>
-      <div class="cat-name">Grandeurs</div>
-    </div>
-    <div class="cat-card" data-cat="estimation" onclick="selectCat('estimation')">
-      <span class="cat-icon">≈</span>
-      <div class="cat-name">Estimation</div>
-    </div>
-    <div class="cat-card" data-cat="suite" onclick="selectCat('suite')">
-      <span class="cat-icon">🔢</span>
-      <div class="cat-name">Suites</div>
-    </div>
-    <div class="cat-card" data-cat="proport" onclick="selectCat('proport')">
-      <span class="cat-icon">%</span>
-      <div class="cat-name">Proportionnalité</div>
-    </div>
   </div>
+
+  <!-- Bouton "Autres types de calculs" -->
+  <div class="autres-btn" onclick="openAutres()">
+    <span class="autres-title">Autres types de calculs</span>
+    <span class="autres-arrow">›</span>
+  </div>
+</div>
+
+<!-- ====================================================
+     ÉCRAN 1b : AUTRES TYPES DE CALCULS
+===================================================== -->
+<div class="screen" id="s1b">
+  <div class="app-title" style="font-size:1.4rem; margin-bottom:4px;">🧮 Calcul Mental</div>
+  <button class="btn-back" onclick="nav(1,'back')">← Retour</button>
+  <div class="section-lbl" style="margin-bottom:10px;">Autres types de calculs</div>
+  <div id="autresTypeList" style="width:100%; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; padding-bottom:8px;"></div>
 </div>
 
 <!-- ====================================================
      ÉCRAN 2 : CHOIX DU TYPE (2 colonnes)
 ===================================================== -->
 <div class="screen" id="s2">
-  <button class="btn-back" onclick="nav(1,'back')">← Retour</button>
+  <button class="btn-back" id="s2BackBtn" onclick="goBackFromS2()">← Retour</button>
   <div class="cat-badge" id="catBadge">
     <span class="cat-badge-icon" id="catBadgeIcon">➕</span>
     <span class="cat-badge-name" id="catBadgeName">Addition</span>
@@ -959,7 +1014,6 @@ function nav(screenNum, dir='fwd') {
   if(screenNum===3) applyTablesLock();
   window.scrollTo(0,0);
 }
-
 function applyTablesLock() {
   const LOCKED_TYPES = { 'mul_tables': 'Tables de multiplication', 'add_maison': 'Maisons des nombres',
     'suite_add': 'Suites additives', 'suite_mul': 'Suites multiplicatives', 'suite_mixte': 'Suites mixtes',
@@ -1007,9 +1061,84 @@ function applyTablesLock() {
 // ================================================================
 // SCREEN 1 → 2 : select category
 // ================================================================
+let s2Origin = 1; // which screen we came from (1 or '1b')
+
+function goBackFromS2(){ nav(s2Origin,'back'); }
+
+const EXTRA_CATS = ['frac','mesure','estimation','suite','proport'];
+
+function openAutres(){
+  renderAutresList();
+  nav('1b','fwd');
+}
+
+function renderAutresList(){
+  const container = document.getElementById('autresTypeList');
+  container.innerHTML = '';
+
+  EXTRA_CATS.forEach(cat => {
+    document.body.className = 'cat-' + cat;
+
+    // Section title
+    const titleEl = document.createElement('div');
+    titleEl.className = 'autres-section-title';
+    titleEl.style.setProperty('--clr-active', `var(--${cat === 'frac' ? 'c77dff' : cat})`);
+    // Map cat to color
+    const catColors = { frac:'#c77dff', mesure:'#4ecdc4', estimation:'#ff9f43', suite:'#ee5a24', proport:'#0652dd' };
+    titleEl.style.color = catColors[cat];
+    titleEl.textContent = CAT_NAMES[cat];
+    container.appendChild(titleEl);
+
+    // Type grid
+    const grid = document.createElement('div');
+    grid.className = 'autres-type-grid';
+
+    TYPES[cat].forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'autres-type-card';
+      card.dataset.tid = t.id;
+      card.dataset.cat = cat;
+      card.textContent = t.name;
+      card.style.setProperty('--clr-active', catColors[cat]);
+      card.onclick = () => selectTypeFromAutres(cat, t);
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+  });
+  // Reset body class
+  document.body.className = '';
+}
+
+function selectTypeFromAutres(cat, t){
+  // Highlight selected
+  document.querySelectorAll('.autres-type-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`.autres-type-card[data-tid="${t.id}"]`);
+  if(card) card.classList.add('selected');
+
+  // Set state
+  selCat = cat;
+  selTypeId = t.id;
+  selSubIdx = 0;
+  s2Origin = '1b';
+
+  document.body.className = 'cat-' + cat;
+
+  // If sub-options, show modal; otherwise go to s3
+  if(t.sub && t.sub.length > 0){
+    showSubModal(t);
+  } else {
+    setTimeout(() => nav(3,'fwd'), 140);
+  }
+}
+
 function selectCat(cat) {
   selCat=cat; selTypeId=null; selSubIdx=0;
   document.body.className='cat-'+cat;
+
+  // Track which screen we came from
+  const extras = ['frac','mesure','estimation','suite','proport'];
+  s2Origin = extras.includes(cat) ? '1b' : 1;
 
   // update badge
   document.getElementById('catBadgeIcon').textContent=CAT_ICONS[cat];
