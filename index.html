@@ -602,7 +602,6 @@ body.cat-add { --clr-active: var(--add); }
 body.cat-sub { --clr-active: var(--sub); }
 body.cat-mul { --clr-active: var(--mul); }
 body.cat-div { --clr-active: var(--div); }
-body.cat-frac { --clr-active: #c77dff; }
 body.cat-mesure { --clr-active: #4ecdc4; }
 body.cat-estimation { --clr-active: #ff9f43; }
 body.cat-suite { --clr-active: #ee5a24; }
@@ -672,7 +671,7 @@ body.cat-proport { --clr-active: #0652dd; }
      ÉCRAN 3 : NIVEAU + RÉGLAGES
 ===================================================== -->
 <div class="screen" id="s3">
-  <button class="btn-back" onclick="nav(2,'back')">← Retour</button>
+  <button class="btn-back" onclick="goBackFromS3()">← Retour</button>
   <div class="app-title" style="font-size:1.5rem; margin-bottom:16px;">Paramètres</div>
 
   <div class="section-lbl">Niveau de difficulté</div>
@@ -895,6 +894,7 @@ const TYPES = {
     { id:'add_int_dec',   name:'Additionner un entier et un décimal',                           sub:null },
     { id:'add_dec_dec',   name:'Additionner des décimaux',                                      sub:null },
     { id:'add_frac',      name:'Additionner des fractions (même dénominateur)',                  sub:['Dén. ≤ 5','Dén. ≤ 10','Dén. ≤ 20','Dén. multiples'], frac:true },
+    { id:'frac_qte',      name:"Fraction d'une quantité (2/3 de 12, 3/4 de 20)",                sub:null, frac:true },
     { id:'add_trou',      name:'Équation à trou — addition (□ + 7 = 15)',                       sub:null },
   ],
   sub: [
@@ -910,6 +910,7 @@ const TYPES = {
     { id:'sub_int_dec',   name:'Soustraire un entier et un décimal',                            sub:null },
     { id:'sub_dec_dec',   name:'Soustraire des décimaux',                                       sub:null },
     { id:'sub_frac',      name:'Soustraire des fractions (même dénominateur)',                   sub:['Dén. ≤ 5','Dén. ≤ 10','Dén. ≤ 20'], frac:true },
+    { id:'frac_sub_ent',  name:'Soustraire une fraction à un entier (1 − 1/4)',                 sub:null, frac:true },
     { id:'sub_trou',      name:'Équation à trou — soustraction (23 − □ = 9)',                   sub:null },
   ],
   mul: [
@@ -940,10 +941,6 @@ const TYPES = {
     { id:'div_quot_rest',  name:'Quotient et reste (division euclidienne)',                      sub:null, dual:true },
     { id:'div_trou',       name:'Équation à trou — division (30 ÷ □ = 5)',                      sub:null },
   ],
-  frac: [
-    { id:'frac_qte',       name:"Fraction d'une quantité (2/3 de 12, 3/4 de 20)",             sub:null, frac:true },
-    { id:'frac_sub_ent',   name:'Soustraire une fraction à un entier (1 − 1/4)',                sub:null, frac:true },
-  ],
   mesure: [
     { id:'mes_longueur',   name:'Conversions de longueur (km, m, cm, mm)',                      sub:['km↔m','m↔cm','cm↔mm','Tout'] },
     { id:'mes_masse',      name:'Conversions de masse (kg, g, t)',                              sub:['kg↔g','t↔kg','Tout'] },
@@ -970,8 +967,8 @@ const TYPES = {
   ],
 };
 
-const CAT_ICONS = { add:'➕', sub:'➖', mul:'✖️', div:'➗', frac:'½', mesure:'📏', estimation:'≈', suite:'🔢', proport:'%' };
-const CAT_NAMES = { add:'Addition', sub:'Soustraction', mul:'Multiplication', div:'Division', frac:'Fractions', mesure:'Grandeurs', estimation:'Estimation', suite:'Suites', proport:'Proportionnalité' };
+const CAT_ICONS = { add:'➕', sub:'➖', mul:'✖️', div:'➗', mesure:'📏', estimation:'≈', suite:'🔢', proport:'%' };
+const CAT_NAMES = { add:'Addition', sub:'Soustraction', mul:'Multiplication', div:'Division', mesure:'Grandeurs', estimation:'Estimation', suite:'Suites', proport:'Proportionnalité' };
 
 // ================================================================
 // STATE
@@ -1061,11 +1058,13 @@ function applyTablesLock() {
 // ================================================================
 // SCREEN 1 → 2 : select category
 // ================================================================
-let s2Origin = 1; // which screen we came from (1 or '1b')
+let s2Origin = 1; // which screen s2 back button goes to
+let s3Origin = 2; // which screen s3 back button goes to (2 or '1b')
 
 function goBackFromS2(){ nav(s2Origin,'back'); }
+function goBackFromS3(){ nav(s3Origin,'back'); }
 
-const EXTRA_CATS = ['frac','mesure','estimation','suite','proport'];
+const EXTRA_CATS = ['mesure','estimation','suite','proport'];
 
 function openAutres(){
   renderAutresList();
@@ -1084,7 +1083,7 @@ function renderAutresList(){
     titleEl.className = 'autres-section-title';
     titleEl.style.setProperty('--clr-active', `var(--${cat === 'frac' ? 'c77dff' : cat})`);
     // Map cat to color
-    const catColors = { frac:'#c77dff', mesure:'#4ecdc4', estimation:'#ff9f43', suite:'#ee5a24', proport:'#0652dd' };
+    const catColors = { mesure:'#4ecdc4', estimation:'#ff9f43', suite:'#ee5a24', proport:'#0652dd' };
     titleEl.style.color = catColors[cat];
     titleEl.textContent = CAT_NAMES[cat];
     container.appendChild(titleEl);
@@ -1121,6 +1120,7 @@ function selectTypeFromAutres(cat, t){
   selTypeId = t.id;
   selSubIdx = 0;
   s2Origin = '1b';
+  s3Origin = '1b'; // retour depuis s3 → s1b
 
   document.body.className = 'cat-' + cat;
 
@@ -1169,6 +1169,7 @@ function renderTypeGrid(cat) {
 
 function selectType(tid) {
   selTypeId=tid; selSubIdx=0;
+  s3Origin = 2; // retour depuis s3 → s2
   document.querySelectorAll('.type-card').forEach(el=>{
     el.classList.toggle('selected',el.dataset.tid===tid);
   });
@@ -2747,7 +2748,7 @@ function quitGame(){
   modal.appendChild(box);
   document.body.appendChild(modal);
 
-  document.getElementById('quitConfirm').onclick=()=>{modal.remove();nav(1,'back');};
+  document.getElementById('quitConfirm').onclick=()=>{modal.remove();clearInterval(timer);nav(3,'back');};
   document.getElementById('quitCancel').onclick=()=>{modal.remove();startCountdown();};
 }
 function drawResultSvg(pct){
