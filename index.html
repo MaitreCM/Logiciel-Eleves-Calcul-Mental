@@ -648,9 +648,8 @@ body.cat-proport { --clr-active: #0652dd; }
      ÉCRAN 1b : AUTRES TYPES DE CALCULS
 ===================================================== -->
 <div class="screen" id="s1b">
-  <div class="app-title" style="font-size:1.4rem; margin-bottom:4px;">🧮 Calcul Mental</div>
+  <div class="app-title">Autres types de calculs</div>
   <button class="btn-back" onclick="nav(1,'back')">← Retour</button>
-  <div class="section-lbl" style="margin-bottom:10px;">Autres types de calculs</div>
   <div id="autresTypeList" style="width:100%; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; padding-bottom:8px;"></div>
 </div>
 
@@ -1242,7 +1241,7 @@ function fmt(n){return Number.isInteger(n)?String(n):String(n).replace('.',',');
 function parseAns(s){return parseFloat(s.replace(',','.'));}
 
 function genQ(typeId,subIdx,lv){
-  let text='',ans=0,ans2=null,hint='',dual=false,allowDec=false;
+  let text='',ans=0,ans2=null,hint='',dual=false,allowDec=false,noSuffix=false;
 
   switch(typeId){
     case 'add_all_int':{
@@ -2004,6 +2003,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CONVERSIONS DE LONGUEUR ----
     case 'mes_longueur':{
+      noSuffix=true;
       // Pioche aléatoire parmi toutes les conversions selon le niveau
       const conv=pick(lv<=2?['km_m','m_cm','cm_mm']:['km_m','m_cm','cm_mm','m_km','cm_m','mm_cm']);
       if(conv==='km_m'){
@@ -2032,6 +2032,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CONVERSIONS DE MASSE ----
     case 'mes_masse':{
+      noSuffix=true;
       const conv=pick(lv<=2?['kg_g','t_kg']:['kg_g','t_kg','g_kg','kg_t']);
       if(conv==='kg_g'){
         if(lv===1){let kg=r(1,10);text=`${kg} kg = ? g`;ans=kg*1000;}
@@ -2052,6 +2053,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CALCULS SUR LES DURÉES ----
     case 'mes_duree':{
+      noSuffix=true;
       const s=subIdx;
       if(s===0||s===3){
         // h ↔ min
@@ -2092,6 +2094,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CONVERSIONS DE CONTENANCE ----
     case 'mes_contenance':{
+      noSuffix=true;
       // Inclut L↔cL, L↔mL, m³↔L, cL↔mL selon le niveau
       const convLv12=['L_cL','L_mL'];
       const convLv34=['L_cL','cL_L','L_mL','mL_L','m3_L','L_m3','cL_mL','mL_cL'];
@@ -2122,6 +2125,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- PÉRIMÈTRES SIMPLES ----
     case 'mes_perimetre':{
+      noSuffix=true;
       const shape=pick(['carré','rectangle']);
       if(shape==='carré'){
         if(lv===1){let c=r(2,10);text=`Carré de côté ${c} cm — périmètre ?`;ans=4*c;}
@@ -2158,6 +2162,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- ARRONDI ----
     case 'est_arrondi':{
+      noSuffix=true;
       allowDec=true;
       // Pioche aléatoire parmi les types d'arrondi selon le niveau
       const types=lv<=2?['entier']:lv===3?['entier','dixieme']:['entier','dixieme','centieme'];
@@ -2225,6 +2230,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- SUITES ADDITIVES ----
     case 'suite_add':{
+      noSuffix=true;
       // Show 4 terms, ask for the 5th
       if(lv===1){let start=r(1,10),step=r(1,5);
         const seq=[start,start+step,start+2*step,start+3*step];
@@ -2247,6 +2253,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- SUITES MULTIPLICATIVES ----
     case 'suite_mul':{
+      noSuffix=true;
       if(lv===1){let start=r(1,5),step=pick([2,3]);
         const seq=[start,start*step,start*step**2,start*step**3];
         text=`${seq.join(' — ')} — ?`;ans=start*step**4;hint=`Règle : ×${step}`;}
@@ -2265,6 +2272,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- SUITES MIXTES ----
     case 'suite_mixte':{
+      noSuffix=true;
       if(lv===1){let a=r(2,8),op1=2,op2=3;
         const seq=[a,a*op1+op2,(a*op1+op2)*op1+op2,((a*op1+op2)*op1+op2)*op1+op2];
         text=`${seq.join(' — ')} — ?`;ans=seq[3]*op1+op2;hint='Règle : ×2 +3';}
@@ -2284,6 +2292,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- QUATRIÈME PROPORTIONNELLE ----
     case 'prop_4eme':{
+      noSuffix=true;
       if(lv===1){
         // Si 1 → k, combien pour n ?
         let k=r(2,8),n=r(2,5);
@@ -2317,7 +2326,7 @@ function genQ(typeId,subIdx,lv){
     default: text='2 + 3';ans=5;
   }
 
-  return {text:text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false, isFrac:false};
+  return {text: noSuffix ? text : text+' = ?', answer:ans, answer2:ans2, hint, isDual:dual, allowDec, isMaison:false, isFrac:false};
 }
 
 // ================================================================
