@@ -942,15 +942,15 @@ const TYPES = {
     { id:'div_trou',       name:'Équation à trou — division (30 ÷ □ = 5)',                      sub:null },
   ],
   mesure: [
-    { id:'mes_longueur',   name:'Conversions de longueur (km, m, cm, mm)',                      sub:['km↔m','m↔cm','cm↔mm','Tout'] },
-    { id:'mes_masse',      name:'Conversions de masse (kg, g, t)',                              sub:['kg↔g','t↔kg','Tout'] },
+    { id:'mes_longueur',   name:'Conversions de longueur (km, m, cm, mm)',                      sub:null },
+    { id:'mes_masse',      name:'Conversions de masse (kg, g, t)',                              sub:null },
     { id:'mes_duree',      name:'Calculs sur les durées (h, min, s)',                           sub:['h↔min','min↔s','Durée entre deux heures','Tout'] },
-    { id:'mes_contenance', name:'Conversions de contenance (L, cL, mL)',                        sub:['L↔cL','L↔mL','Tout'] },
+    { id:'mes_contenance', name:'Conversions de contenance (L, cL, mL, m³)',                   sub:null },
     { id:'mes_perimetre',  name:'Périmètres simples (carré, rectangle)',                        sub:null },
     { id:'mes_monnaie',    name:'Rendu de monnaie et calculs de prix',                         sub:null },
   ],
   estimation: [
-    { id:'est_arrondi',    name:"Arrondir un nombre (entier, dixième, centième)",               sub:["À l'entier",'Au dixième','Au centième'] },
+    { id:'est_arrondi',    name:"Arrondir un nombre (entier, dixième, centième)",               sub:null },
     { id:'est_somme',      name:'Estimer une somme ou différence',                              sub:null },
     { id:'est_produit',    name:'Estimer un produit',                                           sub:null },
     { id:'est_quotient',   name:'Estimer un quotient',                                          sub:null },
@@ -963,7 +963,7 @@ const TYPES = {
   ],
   proport: [
     { id:'prop_4eme',      name:'Quatrième proportionnelle (règle de 3)',                       sub:null },
-    { id:'prop_pct',       name:'Calculer un pourcentage simple (10%, 25%, 50%)',               sub:['50%','25%','10%','75%','Tout'] },
+    { id:'prop_pct',       name:'Calculer un pourcentage simple (10%, 25%, 50%)',               sub:null },
   ],
 };
 
@@ -2004,58 +2004,50 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CONVERSIONS DE LONGUEUR ----
     case 'mes_longueur':{
-      const s=subIdx;
-      if(s===0||s===3){
-        // km ↔ m
+      // Pioche aléatoire parmi toutes les conversions selon le niveau
+      const conv=pick(lv<=2?['km_m','m_cm','cm_mm']:['km_m','m_cm','cm_mm','m_km','cm_m','mm_cm']);
+      if(conv==='km_m'){
         if(lv===1){let km=r(1,10);text=`${km} km = ? m`;ans=km*1000;}
         else if(lv===2){let km=r(1,50);text=`${km} km = ? m`;ans=km*1000;}
-        else if(lv===3){let m=r(1,9)*1000;text=`${m} m = ? km`;ans=m/1000;}
-        else{let km=rd1(0.5,9.5);text=`${fmt(km)} km = ? m`;ans=km*1000;}
-        if(s!==0)break;
-      }
-      if(s===1||s===3){
-        // m ↔ cm
+        else if(lv===3){let km=rd1(0.5,9.5);text=`${fmt(km)} km = ? m`;ans=km*1000;allowDec=true;}
+        else{let km=rd1(0.1,19.9);text=`${fmt(km)} km = ? m`;ans=km*1000;allowDec=true;}
+      } else if(conv==='m_km'){
+        let m=lv===3?r(1,9)*1000:r(1,20)*1000;text=`${m} m = ? km`;ans=m/1000;
+      } else if(conv==='m_cm'){
         if(lv===1){let m=r(1,10);text=`${m} m = ? cm`;ans=m*100;}
         else if(lv===2){let m=r(1,50);text=`${m} m = ? cm`;ans=m*100;}
-        else if(lv===3){let cm=r(1,9)*100;text=`${cm} cm = ? m`;ans=cm/100;allowDec=true;}
-        else{let m=rd1(0.1,5.0);text=`${fmt(m)} m = ? cm`;ans=m*100;}
-        if(s===1)break;
-      }
-      if(s===2||s===3){
-        // cm ↔ mm
+        else if(lv===3){let m=rd1(0.5,9.5);text=`${fmt(m)} m = ? cm`;ans=m*100;allowDec=true;}
+        else{let m=rd1(0.1,19.9);text=`${fmt(m)} m = ? cm`;ans=m*100;allowDec=true;}
+      } else if(conv==='cm_m'){
+        let cm=lv===3?r(1,9)*100:r(1,20)*100;text=`${cm} cm = ? m`;ans=cm/100;
+      } else if(conv==='cm_mm'){
         if(lv===1){let cm=r(1,20);text=`${cm} cm = ? mm`;ans=cm*10;}
         else if(lv===2){let cm=r(5,50);text=`${cm} cm = ? mm`;ans=cm*10;}
-        else if(lv===3){let mm=r(1,9)*10;text=`${mm} mm = ? cm`;ans=mm/10;allowDec=true;}
-        else{let cm=rd1(0.5,9.5);text=`${fmt(cm)} cm = ? mm`;ans=cm*10;}
-        break;
-      }
-      if(s===3){
-        const t=r(0,2);
-        if(t===0){let km=r(1,20);text=`${km} km = ? m`;ans=km*1000;}
-        else if(t===1){let m=r(1,20);text=`${m} m = ? cm`;ans=m*100;}
-        else{let cm=r(1,30);text=`${cm} cm = ? mm`;ans=cm*10;}
+        else if(lv===3){let cm=rd1(0.5,9.5);text=`${fmt(cm)} cm = ? mm`;ans=cm*10;allowDec=true;}
+        else{let cm=rd1(0.5,19.5);text=`${fmt(cm)} cm = ? mm`;ans=cm*10;allowDec=true;}
+      } else { // mm_cm
+        let mm=lv===3?r(1,9)*10:r(2,20)*10;text=`${mm} mm = ? cm`;ans=mm/10;allowDec=true;
       }
       break;}
 
     // ---- CONVERSIONS DE MASSE ----
     case 'mes_masse':{
-      const s=subIdx;
-      function genMasse(sub){
-        if(sub===0||sub===2){
-          // kg ↔ g
-          if(lv===1){let kg=r(1,10);text=`${kg} kg = ? g`;ans=kg*1000;}
-          else if(lv===2){let kg=r(1,50);text=`${kg} kg = ? g`;ans=kg*1000;}
-          else if(lv===3){let g=r(1,9)*1000;text=`${g} g = ? kg`;ans=g/1000;}
-          else{let kg=rd1(0.5,9.5);text=`${fmt(kg)} kg = ? g`;ans=kg*1000;}
-        } else {
-          // t ↔ kg
-          if(lv===1){let t=r(1,10);text=`${t} t = ? kg`;ans=t*1000;}
-          else if(lv===2){let t=r(1,20);text=`${t} t = ? kg`;ans=t*1000;}
-          else if(lv===3){let kg=r(1,9)*1000;text=`${kg} kg = ? t`;ans=kg/1000;}
-          else{let t=rd1(0.5,5.0);text=`${fmt(t)} t = ? kg`;ans=t*1000;}
-        }
+      const conv=pick(lv<=2?['kg_g','t_kg']:['kg_g','t_kg','g_kg','kg_t']);
+      if(conv==='kg_g'){
+        if(lv===1){let kg=r(1,10);text=`${kg} kg = ? g`;ans=kg*1000;}
+        else if(lv===2){let kg=r(1,50);text=`${kg} kg = ? g`;ans=kg*1000;}
+        else if(lv===3){let kg=rd1(0.5,9.5);text=`${fmt(kg)} kg = ? g`;ans=kg*1000;allowDec=true;}
+        else{let kg=rd1(0.1,19.9);text=`${fmt(kg)} kg = ? g`;ans=kg*1000;allowDec=true;}
+      } else if(conv==='g_kg'){
+        let g=lv===3?r(1,9)*1000:r(1,20)*1000;text=`${g} g = ? kg`;ans=g/1000;
+      } else if(conv==='t_kg'){
+        if(lv===1){let t=r(1,10);text=`${t} t = ? kg`;ans=t*1000;}
+        else if(lv===2){let t=r(1,20);text=`${t} t = ? kg`;ans=t*1000;}
+        else if(lv===3){let t=rd1(0.5,9.5);text=`${fmt(t)} t = ? kg`;ans=t*1000;allowDec=true;}
+        else{let t=rd1(0.1,9.9);text=`${fmt(t)} t = ? kg`;ans=t*1000;allowDec=true;}
+      } else { // kg_t
+        let kg=lv===3?r(1,9)*1000:r(2,20)*1000;text=`${kg} kg = ? t`;ans=kg/1000;
       }
-      if(s===2){const t2=r(0,1);genMasse(t2);}else{genMasse(s);}
       break;}
 
     // ---- CALCULS SUR LES DURÉES ----
@@ -2100,24 +2092,31 @@ function genQ(typeId,subIdx,lv){
 
     // ---- CONVERSIONS DE CONTENANCE ----
     case 'mes_contenance':{
-      const s=subIdx;
-      if(s===0||s===2){
+      // Inclut L↔cL, L↔mL, m³↔L, cL↔mL selon le niveau
+      const convLv12=['L_cL','L_mL'];
+      const convLv34=['L_cL','cL_L','L_mL','mL_L','m3_L','L_m3','cL_mL','mL_cL'];
+      const conv=pick(lv<=2?convLv12:convLv34);
+      if(conv==='L_cL'){
         if(lv===1){let l=r(1,5);text=`${l} L = ? cL`;ans=l*100;}
         else if(lv===2){let l=r(1,10);text=`${l} L = ? cL`;ans=l*100;}
-        else if(lv===3){let cl=r(1,9)*100;text=`${cl} cL = ? L`;ans=cl/100;}
-        else{let l=rd1(0.5,5.0);text=`${fmt(l)} L = ? cL`;ans=l*100;}
-        if(s===0)break;
-      }
-      if(s===1||s===2){
+        else{let l=rd1(0.5,9.5);text=`${fmt(l)} L = ? cL`;ans=l*100;allowDec=true;}
+      } else if(conv==='cL_L'){
+        let cl=lv===3?r(1,9)*100:r(1,20)*100;text=`${cl} cL = ? L`;ans=cl/100;
+      } else if(conv==='L_mL'){
         if(lv===1){let l=r(1,5);text=`${l} L = ? mL`;ans=l*1000;}
         else if(lv===2){let l=r(1,10);text=`${l} L = ? mL`;ans=l*1000;}
-        else if(lv===3){let ml=r(1,9)*1000;text=`${ml} mL = ? L`;ans=ml/1000;}
-        else{let l=rd1(0.5,5.0);text=`${fmt(l)} L = ? mL`;ans=l*1000;}
-        break;
-      }
-      if(s===2){const t=r(0,1);
-        if(t===0){let l=r(1,5);text=`${l} L = ? cL`;ans=l*100;}
-        else{let l=r(1,5);text=`${l} L = ? mL`;ans=l*1000;}
+        else{let l=rd1(0.5,5.0);text=`${fmt(l)} L = ? mL`;ans=l*1000;allowDec=true;}
+      } else if(conv==='mL_L'){
+        let ml=lv===3?r(1,9)*1000:r(1,10)*1000;text=`${ml} mL = ? L`;ans=ml/1000;
+      } else if(conv==='m3_L'){
+        if(lv===3){let m3=r(1,9);text=`${m3} m³ = ? L`;ans=m3*1000;}
+        else{let m3=rd1(0.5,9.5);text=`${fmt(m3)} m³ = ? L`;ans=m3*1000;allowDec=true;}
+      } else if(conv==='L_m3'){
+        let l=lv===3?r(1,9)*1000:r(1,20)*1000;text=`${l} L = ? m³`;ans=l/1000;
+      } else if(conv==='cL_mL'){
+        let cl=r(1,20);text=`${cl} cL = ? mL`;ans=cl*10;
+      } else { // mL_cL
+        let ml=r(1,20)*10;text=`${ml} mL = ? cL`;ans=ml/10;allowDec=true;
       }
       break;}
 
@@ -2159,29 +2158,22 @@ function genQ(typeId,subIdx,lv){
 
     // ---- ARRONDI ----
     case 'est_arrondi':{
-      if(subIdx===0){
-        // À l'entier le plus proche
+      allowDec=true;
+      // Pioche aléatoire parmi les types d'arrondi selon le niveau
+      const types=lv<=2?['entier']:lv===3?['entier','dixieme']:['entier','dixieme','centieme'];
+      const type=pick(types);
+      if(type==='entier'){
         if(lv===1){let a=rd1(1.1,9.9);text=`Arrondi de ${fmt(a)} à l'entier`;ans=Math.round(a);}
         else if(lv===2){let a=rd1(10.1,99.9);text=`Arrondi de ${fmt(a)} à l'entier`;ans=Math.round(a);}
         else if(lv===3){let a=rd2(1.01,999.99);text=`Arrondi de ${fmt(a)} à l'entier`;ans=Math.round(a);}
         else{let a=rd2(0.01,9999.99);text=`Arrondi de ${fmt(a)} à l'entier`;ans=Math.round(a);}
-      } else if(subIdx===1){
-        // Au dixième
-        if(lv===1){let a=rd2(1.01,9.99);text=`Arrondi de ${fmt(a)} au dixième`;ans=Math.round(a*10)/10;}
-        else if(lv===2){let a=rd2(1.01,99.99);text=`Arrondi de ${fmt(a)} au dixième`;ans=Math.round(a*10)/10;}
-        else if(lv===3){
-          const n=Math.round((Math.random()*(999-1)+1)*1000)/1000;
-          text=`Arrondi de ${fmt(n)} au dixième`;ans=Math.round(n*10)/10;
-        } else {
-          const n=Math.round((Math.random()*(9999)*1000)/1000)/1000;
-          text=`Arrondi de ${fmt(n)} au dixième`;ans=Math.round(n*10)/10;
-        }
+      } else if(type==='dixieme'){
+        if(lv===3){let a=rd2(1.01,99.99);text=`Arrondi de ${fmt(a)} au dixième`;ans=Math.round(a*10)/10;}
+        else{let a=Math.round((Math.random()*999+1)*1000)/1000;text=`Arrondi de ${fmt(a)} au dixième`;ans=Math.round(a*10)/10;}
       } else {
-        // Au centième
-        const n=Math.round((Math.random()*(lv<=2?9:99)+1)*100000)/100000;
-        text=`Arrondi de ${fmt(n)} au centième`;ans=Math.round(n*100)/100;
+        let a=Math.round((Math.random()*(lv<=3?9:99)+1)*100000)/100000;
+        text=`Arrondi de ${fmt(a)} au centième`;ans=Math.round(a*100)/100;
       }
-      allowDec=true;
       break;}
 
     // ---- ESTIMATION D'UNE SOMME / DIFFÉRENCE ----
@@ -2310,8 +2302,12 @@ function genQ(typeId,subIdx,lv){
 
     // ---- POURCENTAGES SIMPLES ----
     case 'prop_pct':{
-      const pcts=[50,25,10,75,pick([10,25,50,75])];
-      const pct=pcts[subIdx];
+      // Pioche aléatoire parmi les pourcentages selon le niveau
+      const pctLv1=[50,25,10];
+      const pctLv2=[50,25,10,75];
+      const pctLv34=[50,25,10,75,20,5,30];
+      const pctList=lv===1?pctLv1:lv===2?pctLv2:pctLv34;
+      const pct=pick(pctList);
       if(lv===1){let n=pick([10,20,40,60,80,100]);text=`${pct}% de ${n}`;ans=n*pct/100;}
       else if(lv===2){let n=r(2,20)*10;text=`${pct}% de ${n}`;ans=n*pct/100;}
       else if(lv===3){let n=r(2,50)*10;text=`${pct}% de ${n}`;ans=n*pct/100;if(!Number.isInteger(ans))allowDec=true;}
