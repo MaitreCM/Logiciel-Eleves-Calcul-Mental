@@ -943,7 +943,8 @@ const TYPES = {
   mesure: [
     { id:'mes_longueur',   name:'Conversions de longueur (km, m, cm, mm)',                      sub:null },
     { id:'mes_masse',      name:'Conversions de masse (kg, g, t)',                              sub:null },
-    { id:'mes_duree',      name:'Calculs sur les durées (h, min, s)',                           sub:['h↔min','min↔s','Durée entre deux heures','Tout'] },
+    { id:'mes_duree_conv',  name:'Conversions de durées (h, min, s)',                           sub:null },
+    { id:'mes_duree_calc',  name:'Calculs de durée entre deux heures',                         sub:null },
     { id:'mes_contenance', name:'Conversions de contenance (L, cL, mL, m³)',                   sub:null },
     { id:'mes_perimetre',  name:'Périmètres simples (carré, rectangle)',                        sub:null },
     { id:'mes_monnaie',    name:'Rendu de monnaie et calculs de prix',                         sub:null },
@@ -1779,22 +1780,19 @@ function genQ(typeId,subIdx,lv){
 
     // ---- MOITIÉ DE ----
     case 'div_moitie':{
+      noSuffix=true;
       if(lv===1){
-        // Moitié d'un entier pair ≤ 40
-        let a=r(2,20)*2;text=`Moitié de ${a}`;ans=a/2;
+        let a=r(2,20)*2;text=`Moitié de ${a} = ?`;ans=a/2;
       } else if(lv===2){
-        // Moitié d'un entier pair ≤ 200
-        let a=r(2,100)*2;text=`Moitié de ${a}`;ans=a/2;
+        let a=r(2,100)*2;text=`Moitié de ${a} = ?`;ans=a/2;
       } else if(lv===3){
-        // Moitié d'un entier ≤ 1000 (résultat parfois décimal)
         let a=r(2,500)*2;
         if(r(0,1)){a=r(5,300)*2+1;allowDec=true;}
-        text=`Moitié de ${a}`;ans=a/2;
+        text=`Moitié de ${a} = ?`;ans=a/2;
       } else {
-        // Moitié d'un décimal simple
         allowDec=true;
         let a=rd1(1.0,9.8);let aa=Math.round(a*10)/10;
-        text=`Moitié de ${fmt(aa)}`;ans=Math.round(aa/2*100)/100;
+        text=`Moitié de ${fmt(aa)} = ?`;ans=Math.round(aa/2*100)/100;
       }
       break;}
 
@@ -2052,43 +2050,69 @@ function genQ(typeId,subIdx,lv){
       break;}
 
     // ---- CALCULS SUR LES DURÉES ----
-    case 'mes_duree':{
+    // ---- CONVERSIONS DE DURÉES (h↔min, min↔s) ----
+    case 'mes_duree_conv':{
       noSuffix=true;
-      const s=subIdx;
-      if(s===0||s===3){
-        // h ↔ min
+      // Pioche aléatoire entre les deux types de conversion
+      const conv=pick(['h_min','min_h','min_s','s_min']);
+      if(conv==='h_min'){
         if(lv===1){let h=r(1,5);text=`${h} h = ? min`;ans=h*60;}
         else if(lv===2){let h=r(1,10);text=`${h} h = ? min`;ans=h*60;}
-        else if(lv===3){let min=r(1,5)*60;text=`${min} min = ? h`;ans=min/60;}
-        else{let h=r(1,4),m=pick([15,30,45]);text=`${h}h ${m}min = ? min`;ans=h*60+m;}
-        if(s!==0)break;
-      }
-      if(s===1||s===3){
-        // min ↔ s
+        else{let h=r(1,4),m=pick([15,30,45]);text=`${h} h ${m} min = ? min`;ans=h*60+m;}
+      } else if(conv==='min_h'){
+        if(lv===1){let h=r(1,5);text=`${h*60} min = ? h`;ans=h;}
+        else if(lv===2){let h=r(1,10);text=`${h*60} min = ? h`;ans=h;}
+        else if(lv===3){let h=r(1,5),m=pick([15,30,45]);text=`${h*60+m} min = ? h ? min`;ans=h;hint=`${h}h ${m}min`;}
+        else{let h=r(1,8),m=pick([15,30,45]);text=`${h*60+m} min = ? h ? min`;ans=h;hint=`${h}h ${m}min`;}
+      } else if(conv==='min_s'){
         if(lv===1){let min=r(1,5);text=`${min} min = ? s`;ans=min*60;}
         else if(lv===2){let min=r(2,10);text=`${min} min = ? s`;ans=min*60;}
-        else if(lv===3){let s2=r(1,5)*60;text=`${s2} s = ? min`;ans=s2/60;}
-        else{let min=r(1,5),s2=pick([15,30,45]);text=`${min}min ${s2}s = ? s`;ans=min*60+s2;}
-        if(s===1)break;
+        else if(lv===3){let min=r(1,5),s2=pick([15,30,45]);text=`${min} min ${s2} s = ? s`;ans=min*60+s2;}
+        else{let min=r(2,10),s2=pick([10,15,20,30,40,45]);text=`${min} min ${s2} s = ? s`;ans=min*60+s2;}
+      } else { // s_min
+        if(lv===1){let min=r(1,5);text=`${min*60} s = ? min`;ans=min;}
+        else if(lv===2){let min=r(2,10);text=`${min*60} s = ? min`;ans=min;}
+        else{let min=r(1,5),s2=pick([15,30,45]);text=`${min*60+s2} s = ? min ? s`;ans=min;hint=`${min}min ${s2}s`;}
       }
-      if(s===2||s===3){
-        // Durée entre deux heures
-        if(lv===1){
-          let h1=r(7,11),h2=h1+r(1,4);
-          text=`De ${h1}h à ${h2}h = ? min`;ans=(h2-h1)*60;
-        } else if(lv===2){
-          let h1=r(7,14),h2=h1+r(1,5);
-          text=`De ${h1}h à ${h2}h = ? h`;ans=h2-h1;
-        } else if(lv===3){
-          let h1=r(7,11),m1=pick([0,15,30,45]),h2=h1+r(1,3),m2=pick([0,15,30,45]);
-          if(m2<m1){h2++;m2+=60;}
-          text=`De ${h1}h${m1>0?m1:'00'} à ${h2}h${m2>0?m2:'00'} = ? min`;ans=(h2-h1)*60+(m2-m1);
-        } else {
-          let h1=r(8,11),m1=pick([15,20,30,45]),h2=h1+r(2,4),m2=pick([5,10,15,20,30,40]);
-          let totMin=(h2-h1)*60+(m2-m1);if(totMin<0)totMin+=60;
-          text=`De ${h1}h${String(m1).padStart(2,'0')} à ${h2}h${String(m2).padStart(2,'0')} = ? min`;ans=totMin;
-        }
-        break;
+      break;}
+
+    // ---- CALCULS DE DURÉE ENTRE DEUX HEURES ----
+    case 'mes_duree_calc':{
+      noSuffix=true;
+      const MINS=[0,15,30,45];
+      const MINS5=[0,5,10,15,20,25,30,35,40,45,50,55];
+      function fmtH(h,m){return m===0?`${h}h`:`${h}h${String(m).padStart(2,'0')}`;}
+
+      if(lv===1){
+        // Heures entières uniquement
+        let h1=r(7,15),h2=h1+r(1,4);if(h2>23)h2=23;
+        text=`De ${h1}h à ${h2}h = ? min`;ans=(h2-h1)*60;
+
+      } else if(lv===2){
+        // Avec quarts d'heure (0,15,30,45)
+        let h1=r(7,14),m1=pick(MINS),h2=h1+r(1,3),m2=pick(MINS);
+        if(h2>23){h2=23;m2=pick(MINS);}
+        let totalMin=(h2-h1)*60+(m2-m1);
+        if(totalMin<=0){h2=h1+1;m2=pick(MINS.filter(m=>m>m1).length?MINS.filter(m=>m>m1):[0]);totalMin=(h2-h1)*60+(m2-m1);}
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
+
+      } else if(lv===3){
+        // Avec multiples de 5
+        let h1=r(8,14),m1=pick(MINS5),h2=h1+r(1,4),m2=pick(MINS5);
+        if(h2>23){h2=23;m2=pick(MINS5);}
+        let totalMin=(h2-h1)*60+(m2-m1);
+        if(totalMin<=0){h2=h1+1;m2=pick(MINS5.filter(m=>m>m1).length?MINS5.filter(m=>m>m1):[0]);totalMin=(h2-h1)*60+(m2-m1);}
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
+
+      } else {
+        // Minutes libres (1-59), aucune contrainte
+        let h1=r(7,14),m1=r(1,58),h2=h1+r(1,4),m2=r(1,59);
+        if(h2>23){h2=23;}
+        if(h2===h1&&m2<=m1){h2=h1+1;m2=r(m1+1,59);}
+        if(h2>23){h2=23;m2=59;}
+        let totalMin=(h2-h1)*60+(m2-m1);
+        if(totalMin<=0)totalMin=60+totalMin;
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
       }
       break;}
 
@@ -2142,17 +2166,21 @@ function genQ(typeId,subIdx,lv){
 
     // ---- RENDU DE MONNAIE ----
     case 'mes_monnaie':{
+      noSuffix=true;
       allowDec=true;
       if(lv===1){
-        let prix=r(1,9),billet=10;
-        text=`Achat ${prix} € — rendu sur ${billet} €`;ans=billet-prix;
+        let billet=10, prix=r(1,9);
+        text=`Achat ${prix} € — rendu sur ${billet} € = ?`;ans=billet-prix;
       } else if(lv===2){
-        let prix=r(1,19)+r(0,1)*0.5,billet=pick([10,20]);
-        text=`Achat ${fmt(prix)} € — rendu sur ${billet} €`;ans=Math.round((billet-prix)*100)/100;
+        let billet=pick([10,20]);
+        let prix=r(1,billet-1)+r(0,1)*0.5;
+        if(prix>=billet)prix=billet-0.5;
+        text=`Achat ${fmt(prix)} € — rendu sur ${billet} € = ?`;ans=Math.round((billet-prix)*100)/100;
       } else if(lv===3){
-        let prix=rd1(0.5,49.5),billet=pick([10,20,50]);
-        while(prix>=billet)prix=rd1(0.5,49.5);
-        text=`Achat ${fmt(prix)} € — rendu sur ${billet} €`;ans=Math.round((billet-prix)*100)/100;
+        let billet=pick([10,20,50]);
+        let prix=rd1(0.5,billet-0.5);
+        if(prix>=billet)prix=billet-0.5;
+        text=`Achat ${fmt(prix)} € — rendu sur ${billet} € = ?`;ans=Math.round((billet-prix)*100)/100;
       } else {
         let qty=r(2,8),pu=rd1(0.5,9.5);
         let total=Math.round(qty*pu*100)/100;
@@ -2183,6 +2211,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- ESTIMATION D'UNE SOMME / DIFFÉRENCE ----
     case 'est_somme':{
+      noSuffix=true;
       if(lv===1){let a=r(10,200),b=r(10,200);text=`${a} + ${b} ≈ ?`;ans=Math.round((a+b)/10)*10;hint='Arrondir à la dizaine';}
       else if(lv===2){let a=r(50,500),b=r(50,500);text=`${a} + ${b} ≈ ?`;ans=Math.round((a+b)/100)*100;hint='Arrondir à la centaine';}
       else if(lv===3){let a=rd1(1.0,9.9),b=rd1(1.0,9.9);text=`${fmt(a)} + ${fmt(b)} ≈ ?`;ans=Math.round(a+b);hint="Arrondir à l'entier";}
@@ -2194,6 +2223,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- ESTIMATION D'UN PRODUIT ----
     case 'est_produit':{
+      noSuffix=true;
       if(lv===1){let a=r(3,9),b=r(20,80);let aa=Math.round(a/5)*5||5,bb=Math.round(b/10)*10;text=`${a} × ${b} ≈ ?`;ans=aa*bb;hint=`≈ ${aa} × ${bb}`;}
       else if(lv===2){let a=r(15,50),b=r(10,40);let aa=Math.round(a/10)*10,bb=Math.round(b/10)*10;text=`${a} × ${b} ≈ ?`;ans=aa*bb;hint=`≈ ${aa} × ${bb}`;}
       else if(lv===3){let a=rd1(2.0,9.9),b=r(5,20);let aa=Math.round(a);text=`${fmt(a)} × ${b} ≈ ?`;ans=aa*b;hint=`≈ ${aa} × ${b}`;}
@@ -2202,6 +2232,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- ESTIMATION D'UN QUOTIENT ----
     case 'est_quotient':{
+      noSuffix=true;
       if(lv===1){let d=pick([2,4,5]),n=r(10,100);let nn=Math.round(n/d)*d;text=`${n} ÷ ${d} ≈ ?`;ans=nn/d;hint=`≈ ${nn} ÷ ${d}`;}
       else if(lv===2){let d=pick([4,5,8]),n=r(20,200);let nn=Math.round(n/d)*d;text=`${n} ÷ ${d} ≈ ?`;ans=nn/d;hint=`≈ ${nn} ÷ ${d}`;}
       else if(lv===3){let d=pick([5,8,9]),n=r(50,500);let nn=Math.round(n/(d*10))*d*10;text=`${n} ÷ ${d} ≈ ?`;ans=nn/d;hint=`≈ ${nn} ÷ ${d}`;}
@@ -2210,6 +2241,7 @@ function genQ(typeId,subIdx,lv){
 
     // ---- RÉSULTAT PLAUSIBLE ----
     case 'est_plausible':{
+      noSuffix=true;
       // Multiple choice: 3 options, one correct — stored in answer, options in hint
       let correctAns, opts=[], qText;
       if(lv===1){let a=r(3,9),b=r(20,80);correctAns=a*b;
