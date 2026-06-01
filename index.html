@@ -396,8 +396,9 @@ body {
 }
 .question-text {
   font-family: 'Fredoka One', cursive;
-  font-size: clamp(2.4rem, 10vw, 4.2rem);
+  font-size: clamp(1.6rem, 6vw, 2.8rem);
   line-height: 1.15;
+  white-space: pre-line;
 }
 .question-hint { font-size: 0.78rem; color: var(--muted); margin-top: 7px; }
 
@@ -2191,7 +2192,6 @@ function genQ(typeId,subIdx,lv){
     // ---- CONVERSIONS DE DURÉES (h↔min, min↔s) ----
     case 'mes_duree_conv':{
       noSuffix=true;
-      // Pioche aléatoire entre les deux types de conversion
       const conv=pick(['h_min','min_h','min_s','s_min']);
       if(conv==='h_min'){
         if(lv===1){let h=r(1,5);text=`${h} h = ? min`;ans=h*60;}
@@ -2200,8 +2200,12 @@ function genQ(typeId,subIdx,lv){
       } else if(conv==='min_h'){
         if(lv===1){let h=r(1,5);text=`${h*60} min = ? h`;ans=h;}
         else if(lv===2){let h=r(1,10);text=`${h*60} min = ? h`;ans=h;}
-        else if(lv===3){let h=r(1,5),m=pick([15,30,45]);text=`${h*60+m} min = ? h ? min`;ans=h;hint=`${h}h ${m}min`;}
-        else{let h=r(1,8),m=pick([15,30,45]);text=`${h*60+m} min = ? h ? min`;ans=h;hint=`${h}h ${m}min`;}
+        else{
+          // dual: answer is h (primary) and remaining min (secondary)
+          let h=r(1,5),m=pick([15,30,45]);
+          text=`${h*60+m} min = ? h ? min`;
+          ans=h; ans2=m; dual=true; hint='h / min';
+        }
       } else if(conv==='min_s'){
         if(lv===1){let min=r(1,5);text=`${min} min = ? s`;ans=min*60;}
         else if(lv===2){let min=r(2,10);text=`${min} min = ? s`;ans=min*60;}
@@ -2210,7 +2214,12 @@ function genQ(typeId,subIdx,lv){
       } else { // s_min
         if(lv===1){let min=r(1,5);text=`${min*60} s = ? min`;ans=min;}
         else if(lv===2){let min=r(2,10);text=`${min*60} s = ? min`;ans=min;}
-        else{let min=r(1,5),s2=pick([15,30,45]);text=`${min*60+s2} s = ? min ? s`;ans=min;hint=`${min}min ${s2}s`;}
+        else{
+          // dual: answer is min (primary) and remaining s (secondary)
+          let min=r(1,5),s2=pick([15,30,45]);
+          text=`${min*60+s2} s = ? min ? s`;
+          ans=min; ans2=s2; dual=true; hint='min / s';
+        }
       }
       break;}
 
@@ -2221,36 +2230,55 @@ function genQ(typeId,subIdx,lv){
       const MINS5=[0,5,10,15,20,25,30,35,40,45,50,55];
       function fmtH(h,m){return m===0?`${h}h`:`${h}h${String(m).padStart(2,'0')}`;}
 
+      function ensurePositive(h1,m1,h2,m2,minsArr){
+        let total=(h2-h1)*60+(m2-m1);
+        if(total<=0){
+          h2=h1+1;
+          const valid=(minsArr||MINS).filter(m=>h2>h1||m>m1);
+          m2=pick(valid.length?valid:(minsArr||MINS));
+          total=(h2-h1)*60+(m2-m1);
+        }
+        return [h2,m2,total];
+      }
+
+      let h1,m1,h2,m2,totalMin;
+
       if(lv===1){
-        // Heures entières uniquement
-        let h1=r(7,15),h2=h1+r(1,4);if(h2>23)h2=23;
-        text=`De ${h1}h à ${h2}h = ? min`;ans=(h2-h1)*60;
+        // Heures entières — résultat toujours entier en heures → dual h + 0 min
+        h1=r(7,15); h2=h1+r(1,4); if(h2>23)h2=23;
+        totalMin=(h2-h1)*60;
+        text=`De ${h1}h à ${h2}h\n= ? h ? min`;
+        ans=h2-h1; ans2=0; dual=true; hint='h / min';
 
       } else if(lv===2){
-        // Avec quarts d'heure (0,15,30,45)
-        let h1=r(7,14),m1=pick(MINS),h2=h1+r(1,3),m2=pick(MINS);
+        // Quarts d'heure
+        h1=r(7,14); m1=pick(MINS); h2=h1+r(1,3); m2=pick(MINS);
         if(h2>23){h2=23;m2=pick(MINS);}
-        let totalMin=(h2-h1)*60+(m2-m1);
-        if(totalMin<=0){h2=h1+1;m2=pick(MINS.filter(m=>m>m1).length?MINS.filter(m=>m>m1):[0]);totalMin=(h2-h1)*60+(m2-m1);}
-        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
+        [h2,m2,totalMin]=ensurePositive(h1,m1,h2,m2,MINS);
+        const resH=Math.floor(totalMin/60), resM=totalMin%60;
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)}\n= ? h ? min`;
+        ans=resH; ans2=resM; dual=true; hint='h / min';
 
       } else if(lv===3){
-        // Avec multiples de 5
-        let h1=r(8,14),m1=pick(MINS5),h2=h1+r(1,4),m2=pick(MINS5);
+        // Multiples de 5
+        h1=r(8,14); m1=pick(MINS5); h2=h1+r(1,4); m2=pick(MINS5);
         if(h2>23){h2=23;m2=pick(MINS5);}
-        let totalMin=(h2-h1)*60+(m2-m1);
-        if(totalMin<=0){h2=h1+1;m2=pick(MINS5.filter(m=>m>m1).length?MINS5.filter(m=>m>m1):[0]);totalMin=(h2-h1)*60+(m2-m1);}
-        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
+        [h2,m2,totalMin]=ensurePositive(h1,m1,h2,m2,MINS5);
+        const resH=Math.floor(totalMin/60), resM=totalMin%60;
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)}\n= ? h ? min`;
+        ans=resH; ans2=resM; dual=true; hint='h / min';
 
       } else {
-        // Minutes libres (1-59), aucune contrainte
-        let h1=r(7,14),m1=r(1,58),h2=h1+r(1,4),m2=r(1,59);
+        // Minutes libres
+        h1=r(7,14); m1=r(1,58); h2=h1+r(1,4); m2=r(1,59);
         if(h2>23){h2=23;}
         if(h2===h1&&m2<=m1){h2=h1+1;m2=r(m1+1,59);}
         if(h2>23){h2=23;m2=59;}
-        let totalMin=(h2-h1)*60+(m2-m1);
+        totalMin=(h2-h1)*60+(m2-m1);
         if(totalMin<=0)totalMin=60+totalMin;
-        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)} = ? min`;ans=totalMin;
+        const resH=Math.floor(totalMin/60), resM=totalMin%60;
+        text=`De ${fmtH(h1,m1)} à ${fmtH(h2,m2)}\n= ? h ? min`;
+        ans=resH; ans2=resM; dual=true; hint='h / min';
       }
       break;}
 
@@ -2705,8 +2733,19 @@ function showQuestion(){
   bStart();startCountdown();
 }
 
+function getDualLabels(){
+  const q=questions[curQ];
+  if(q && q.hint==='h / min') return ['h','min'];
+  if(q && q.hint==='min / s') return ['min','s'];
+  return ['Quotient','Reste'];
+}
 function updateDualLabel(){
-  document.getElementById('activeInputLabel').textContent=dualFocus==='q'?'Saisie : Quotient':'Saisie : Reste';
+  const labels=getDualLabels();
+  document.getElementById('activeInputLabel').textContent='Saisie : '+(dualFocus==='q'?labels[0]:labels[1]);
+  // Update the visible dual labels too
+  const dualLabels=document.querySelectorAll('.dual-label');
+  if(dualLabels[0])dualLabels[0].textContent=labels[0];
+  if(dualLabels[1])dualLabels[1].textContent=labels[1];
 }
 
 function startCountdown(){
@@ -2779,7 +2818,7 @@ function submitAnswer(){
     document.getElementById('ansQ').className='answer-input '+(gq===q.answer?'correct':'wrong');
     document.getElementById('ansR').className='answer-input '+(gr===q.answer2?'correct':'wrong');
     if(ok){score++;bOk();showFb('✅');}else{bWrong();showFb('❌');}
-    recordAns(vq+' / '+vr,ok,false);
+    recordAns(formatDualGiven(vq,vr,q),ok,false);
     setTimeout(nextQ,950);
   }else{
     const v=document.getElementById('answerInput').value.trim();
@@ -2814,8 +2853,17 @@ function fracLabel(q){
   const op=fd.type==='sub'?'−':'+';
   return `${fd.n1}/${fd.d1} ${op} ${fd.n2}/${fd.d2}`;
 }
+function formatDualGiven(v1,v2,q){
+  // Format dual answer with proper units based on hint
+  const hint=q?q.hint:'';
+  if(hint==='h / min') return `${v1}h ${v2}min`;
+  if(hint==='min / s') return `${v1}min ${v2}s`;
+  // Default: quotient et reste
+  return `${v1} r.${v2}`;
+}
+
 function recordAns(given,ok,skipped){
-  const cq=questions[curQ]; answers.push({q:cq.isFrac?fracLabel(cq):cq.text, ans:cq.answer,ans2:cq.answer2,given,ok,skipped,isDual:cq.isDual});
+  const cq=questions[curQ]; answers.push({q:cq.isFrac?fracLabel(cq):cq.text, ans:cq.answer,ans2:cq.answer2,given,ok,skipped,isDual:cq.isDual,hint:cq.hint||''});
 }
 
 function nextQ(){curQ++;if(curQ>=nbQ)endGame();else showQuestion();}
@@ -2841,7 +2889,7 @@ function endGame(){
     const div=document.createElement('div');
     div.className='review-item';
     const givenStr=a.skipped?'—':a.given;
-    const correctStr=a.isDual?`${a.ans} r.${a.ans2}`:`${fmt(a.ans)}`;
+    const correctStr=a.isDual?formatDualGiven(a.ans,a.ans2,a):`${fmt(a.ans)}`;
     const cls=a.ok?'correct-a':'wrong-a';
     div.innerHTML=`<span class="review-q">${a.q}</span><span class="review-given ${cls}">${givenStr}</span>${!a.ok?`<span class="review-ans">→ ${correctStr}</span>`:''}<span class="review-icon">${a.ok?'✅':a.skipped?'⏱':'❌'}</span>`;
     list.appendChild(div);
