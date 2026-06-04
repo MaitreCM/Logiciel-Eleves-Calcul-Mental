@@ -395,7 +395,7 @@ body {
   text-align: center;
   width: 100%;
   margin-bottom: 16px;
-  height: 280px;
+  height: 160px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -586,7 +586,7 @@ body {
 .stat-card { background: var(--card); border-radius: 12px; padding: 12px 8px; text-align: center; }
 .stat-val { font-size: 1.6rem; font-weight: 800; }
 .stat-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
-.review-list { width: 100%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; max-height: 280px; overflow-y: auto; }
+.review-list { width: 100%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 18px; max-height: 160px; overflow-y: auto; }
 .review-item { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 11px; padding: 12px 16px; font-size: 1.4rem; gap: 10px; }
 .review-q { font-weight: 700; flex: 1; font-size: 1.4rem; }
 .review-given { font-weight: 800; font-size: 1.4rem; }
@@ -767,14 +767,12 @@ body.cat-proport { --clr-active: #0652dd; }
   <!-- Standard question card -->
   <div class="question-card" id="questionCard">
     <div class="question-text" id="qText">?</div>
-    <div class="question-hint" id="qHint"></div>
   </div>
 
   <!-- Fraction display -->
   <div id="fracDisplay" style="display:none; width:100%; margin-bottom:16px;">
     <div class="question-card" style="padding:20px 16px; min-height:130px;">
       <div id="fracSvgWrap" style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;"></div>
-      <div class="question-hint" id="fracHint" style="margin-top:8px;"></div>
     </div>
   </div>
 
@@ -2730,11 +2728,9 @@ function showQuestion(){
     document.getElementById('maisonTgtText').textContent = q.maisonTgt;
     document.getElementById('maisonCalcText').textContent = q.maisonDisplay;
   } else if(isFrac){
-    document.getElementById('fracHint').textContent = q.hint||'';
     renderFracDisplay(q);
   } else {
     document.getElementById('qText').textContent=q.text;
-    document.getElementById('qHint').textContent=q.hint||'';
     setTimeout(autoFitQuestion,10);
   }
 
