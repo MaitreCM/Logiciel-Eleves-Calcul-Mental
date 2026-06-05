@@ -2819,13 +2819,24 @@ function np(k){
   const inp=isDual?document.getElementById(dualFocus==='q'?'ansQ':'ansR'):document.getElementById('answerInput');
   if(k==='del')inp.value=inp.value.slice(0,-1);
   else if(k===','){
-    // Only add comma if not already present and decimal is allowed
     if(!inp.value.includes(',')&&!inp.value.includes('.'))inp.value+=',';
   }
   else if(k==='tab'){
     if(isDual){dualFocus=dualFocus==='q'?'r':'q';updateDualLabel();document.getElementById(dualFocus==='q'?'ansQ':'ansR').focus();}
   }
-  else if(inp.value.length<10)inp.value+=k;
+  else if(inp.value.length<10){
+    inp.value+=k;
+    // Auto-switch from quotient to reste after expected digits entered
+    if(isDual && dualFocus==='q'){
+      const q=questions[curQ];
+      if(q && q.answer!==null){
+        const expDigits=q.answer===0?1:Math.floor(Math.log10(Math.abs(q.answer)))+1;
+        if(inp.value.replace(/[^0-9]/g,'').length>=expDigits){
+          setTimeout(()=>{dualFocus='r';updateDualLabel();document.getElementById('ansR').focus();},120);
+        }
+      }
+    }
+  }
   if(!isDual)checkAutoSubmit();
 }
 
@@ -2835,14 +2846,14 @@ function submitAnswer(){
   if(isDual){
     const vq=document.getElementById('ansQ').value.trim();
     const vr=document.getElementById('ansR').value.trim();
-    if(vq===''||vr==='')return;
+    if(vq==='')return; // quotient obligatoire, reste peut être vide (= 0)
     clearInterval(timer);answered=true;
-    const gq=parseInt(vq,10),gr=parseInt(vr,10);
+    const gq=parseInt(vq,10),gr=vr===''?0:parseInt(vr,10);
     const ok=(gq===q.answer)&&(gr===q.answer2);
     document.getElementById('ansQ').className='answer-input '+(gq===q.answer?'correct':'wrong');
     document.getElementById('ansR').className='answer-input '+(gr===q.answer2?'correct':'wrong');
     if(ok){score++;bOk();showFb('✅');}else{bWrong();showFb('❌');}
-    recordAns(formatDualGiven(vq,vr,q),ok,false);
+    recordAns(formatDualGiven(vq,gr,q),ok,false);
     setTimeout(nextQ,950);
   }else{
     const v=document.getElementById('answerInput').value.trim();
