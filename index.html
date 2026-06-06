@@ -2742,7 +2742,7 @@ function showQuestion(){
   const tabBtn=document.getElementById('tabBtn');
   if(isDual){dotBtn.style.display='none';tabBtn.style.display='block';}
   else{dotBtn.style.display=q.allowDec?'block':'none';tabBtn.style.display='none';}
-  document.getElementById('autoSubmitMsg').style.display=isAutoSubmitType()?'block':'none';
+  document.getElementById('autoSubmitMsg').style.display='block';
 
   if(isDual){
     document.getElementById('ansQ').value='';document.getElementById('ansR').value='';
@@ -2790,21 +2790,65 @@ function updateTimerUI(t,total){
 }
 
 function isAutoSubmitType(){
-  return (selTypeId==='add_maison'||selTypeId==='mul_tables')&&!questions[curQ]?.isFrac;
+  // Now universal — all types except fractions (which return early)
+  return !questions[curQ]?.isFrac;
+}
+
+function countDecimalDigits(n){
+  // Returns number of significant decimal digits (ignoring trailing zeros)
+  const s=String(Math.abs(n));
+  const dot=s.indexOf('.');
+  if(dot===-1)return 0;
+  return s.slice(dot+1).replace(/0+$/,'').length;
+}
+
+function digitCount(n){
+  // Number of digits in an integer
+  if(n===0)return 1;
+  return Math.floor(Math.log10(Math.abs(Math.round(n))))+1;
 }
 
 function checkAutoSubmit(){
-  if(answered||isDual||!isAutoSubmitType())return;
+  if(answered||isDual)return;
   const q=questions[curQ];
+  if(!q||q.isFrac)return;
   const inp=document.getElementById('answerInput');
-  const val=inp.value.replace(/[^0-9]/g,'');
-  if(val.length===0)return;
-  const expected=Math.abs(q.answer)===0?1:Math.floor(Math.log10(Math.abs(q.answer)))+1;
-  if(val.length>=expected) setTimeout(submitAnswer,80);
+  const raw=inp.value;
+  if(raw===''||raw==='-')return;
+
+  if(q.allowDec){
+    // Decimal: validate when typed decimal digits >= expected decimal digits
+    const ansDecDigits=countDecimalDigits(q.answer);
+    if(ansDecDigits===0){
+      // Answer is actually an integer — validate by digit count
+      const digits=raw.replace(/[^0-9]/g,'');
+      if(digits.length>=digitCount(q.answer)) submitAnswer();
+      return;
+    }
+    if(!raw.includes(',')&&!raw.includes('.'))return;
+    const afterComma=raw.split(/[,\.]/)[1]||'';
+    // Don't strip trailing zeros — count raw typed digits after comma
+    if(afterComma.length>=ansDecDigits) submitAnswer();
+  } else {
+    // Integer: validate when typed digit count >= expected digits of answer
+    const digits=raw.replace(/[^0-9]/g,'');
+    if(digits.length===0)return;
+    if(digits.length>=digitCount(q.answer)) submitAnswer();
+  }
+}
+
+function checkAutoSubmitDualReste(){
+  if(answered||!isDual)return;
+  const q=questions[curQ];
+  if(!q)return;
+  const inp=document.getElementById('ansR');
+  const digits=inp.value.replace(/[^0-9]/g,'');
+  if(digits.length===0)return;
+  if(digits.length>=digitCount(q.answer2)) submitAnswer();
 }
 
 function handleKey(e){
-  if(e.key==='Enter')submitAnswer();
+  if(e.key==='Enter') submitAnswer();
   else setTimeout(checkAutoSubmit,0);
 }
 function handleKeyDual(e,field){
@@ -2832,12 +2876,16 @@ function np(k){
       if(q && q.answer!==null){
         const expDigits=q.answer===0?1:Math.floor(Math.log10(Math.abs(q.answer)))+1;
         if(inp.value.replace(/[^0-9]/g,'').length>=expDigits){
-          setTimeout(()=>{dualFocus='r';updateDualLabel();document.getElementById('ansR').focus();},120);
+          dualFocus='r';
+          updateDualLabel();
+          document.getElementById('ansR').focus();
+          // No auto-submit yet — reste field is empty
         }
       }
     }
   }
-  if(!isDual)checkAutoSubmit();
+  if(!isDual) checkAutoSubmit();
+  else if(isDual && dualFocus==='r') checkAutoSubmitDualReste();
 }
 
 function submitAnswer(){
