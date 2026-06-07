@@ -806,7 +806,7 @@ body.cat-proport { --clr-active: #0652dd; }
   <div id="normalAnswer">
     <div class="answer-wrap">
       <input type="text" inputmode="none" class="answer-input" id="answerInput"
-        placeholder="?" autocomplete="off" readonly onkeydown="handleKey(event)">
+        placeholder="?" autocomplete="off" readonly onkeydown="handleKey(event)" oninput="checkAutoSubmit()">
     </div>
     <div id="autoSubmitMsg" style="display:none; text-align:center; font-size:0.72rem; font-weight:700; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
       ⚡ Validation automatique des réponses
@@ -818,12 +818,12 @@ body.cat-proport { --clr-active: #0652dd; }
       <div>
         <div class="dual-label">Quotient</div>
         <input type="text" inputmode="none" class="answer-input" id="ansQ"
-          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'q')">
+          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'q')" oninput="checkAutoSubmitDualQuotient()">
       </div>
       <div>
         <div class="dual-label">Reste</div>
         <input type="text" inputmode="none" class="answer-input" id="ansR"
-          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'r')">
+          placeholder="?" autocomplete="off" readonly onkeydown="handleKeyDual(event,'r')" oninput="checkAutoSubmitDualReste()">
       </div>
     </div>
   </div>
@@ -2836,6 +2836,20 @@ function checkAutoSubmit(){
   }
 }
 
+function checkAutoSubmitDualQuotient(){
+  if(answered||!isDual)return;
+  const q=questions[curQ];
+  if(!q)return;
+  const inp=document.getElementById('ansQ');
+  const digits=inp.value.replace(/[^0-9]/g,'');
+  if(digits.length===0)return;
+  if(digits.length>=digitCount(q.answer)){
+    dualFocus='r';
+    updateDualLabel();
+    document.getElementById('ansR').focus();
+  }
+}
+
 function checkAutoSubmitDualReste(){
   if(answered||!isDual)return;
   const q=questions[curQ];
@@ -2848,7 +2862,6 @@ function checkAutoSubmitDualReste(){
 
 function handleKey(e){
   if(e.key==='Enter') submitAnswer();
-  else setTimeout(checkAutoSubmit,0);
 }
 function handleKeyDual(e,field){
   if(e.key==='Enter'||e.key==='Tab'){
@@ -3158,106 +3171,137 @@ function drawResultSvg(pct){
 }
 
 function printResults(){
-  // Collect data
-  const score=document.getElementById('resScore').textContent;
-  const den=document.getElementById('resDen').textContent;
-  const pct=document.getElementById('stPct').textContent;
-  const correct=document.getElementById('stCorrect').textContent;
-  const wrong=document.getElementById('stWrong').textContent;
-  const skip=document.getElementById('stSkip').textContent;
   const lvNames={1:'Débutant',2:'Intermédiaire',3:'Confirmé',4:'Expert'};
   const catNames={add:'Addition',sub:'Soustraction',mul:'Multiplication',div:'Division',
     frac:'Fractions',mesure:'Grandeurs',estimation:'Estimation',suite:'Suites',proport:'Proportionnalité'};
-  const typeName=selTypeId?TYPES[selCat]?.find(t=>t.id===selTypeId)?.name||'':'';
+  const typeName=selTypeId?(TYPES[selCat]?.find(t=>t.id===selTypeId)?.name||''):'';
+  const scoreNum=document.getElementById('resScore').textContent;
+  const den=document.getElementById('resDen').textContent;
+  const pct=document.getElementById('stPct').textContent;
 
-  // Build rows
-  let rows='';
-  answers.forEach((a,i)=>{
-    const icon=a.ok?'✅':a.skipped?'⏱':'❌';
+  // Build rows data as JSON
+  const rowsData=answers.map((a,i)=>{
     const q=a.q.replace(' = ?','').replace(/\n/g,' ');
-    const given=a.skipped?'—':a.given||'—';
+    const given=a.skipped?'—':(a.given||'—');
     const corr=a.isDual?formatDualGiven(a.ans,a.ans2,a):fmt(a.ans);
-    const corrCell=!a.ok?`<td style="color:#27ae60;font-weight:700;">${corr}</td>`:'<td></td>';
-    rows+=`<tr>
-      <td style="text-align:center">${i+1}</td>
-      <td>${q}</td>
-      <td style="text-align:center;font-size:1.1em">${icon}</td>
-      <td style="text-align:center">${given}</td>
-      ${corrCell}
-    </tr>`;
+    const icon=a.ok?'✅':a.skipped?'⏱':'❌';
+    return {num:i+1,q,given,corr,ok:a.ok,skipped:a.skipped,icon};
   });
 
-  const now=new Date();
-  const dateStr=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const rows=rowsData.map((d,i)=>{
+    const stripe=(Math.floor(i/5)%2===1)?'background:rgba(255,255,255,0.04);':'';
+    return `<tr class="calc-row" data-ok="${d.ok}" data-skipped="${d.skipped}" style="${stripe}" onclick="revealRow(this)">
+      <td class="num">${d.num}</td>
+      <td class="calcul">${d.q}</td>
+      <td class="icone hidden-cell">—</td>
+      <td class="reponse hidden-cell">—</td>
+      <td class="correction hidden-cell"></td>
+    </tr>`;
+  }).join('');
+
+  const rowsJson=JSON.stringify(rowsData);
 
   const html=`<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Résultats — Calcul Mental</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧮 Calcul Mental — Correction</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Nunito', sans-serif; background: #fff; color: #111; padding: 24px; font-size: 13px; }
-  h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #ff6b6b; }
-  h1 span { color: #ffd93d; }
-  .meta { font-size: 12px; color: #666; margin-bottom: 16px; }
-  .score-box { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  .score-chip { background: #f5f5f5; border-radius: 10px; padding: 10px 16px; text-align: center; min-width: 80px; }
-  .score-chip .val { font-size: 24px; font-weight: 800; }
-  .score-chip .lbl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-  .correct { color: #27ae60; }
-  .wrong { color: #e74c3c; }
-  .skip { color: #f39c12; }
-  .pct { color: #2980b9; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: #f0f0f0; padding: 7px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-  tr:last-child td { border-bottom: none; }
-  tr:nth-child(even) { background: #fafafa; }
-  .section { font-size: 11px; color: #888; margin-bottom: 8px; }
-  @media print {
-    body { padding: 12px; }
-    button { display: none; }
+  :root{
+    --bg:#0f0e17;--surface:#1a1929;--card:#232236;
+    --text:#fffffe;--muted:#a7a9be;
+    --green:#6bcb77;--red:#ff6b6b;--yellow:#ffd93d;
+    --fs:1.6rem;
   }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;padding:20px;min-height:100vh;}
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--surface);}
+  .title{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#ff6b6b,#ffd93d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .meta{font-size:0.85rem;color:var(--muted);margin-top:4px;}
+  .score-big{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,#ff6b6b,#ffd93d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .ctrl-btn{padding:8px 16px;border-radius:50px;border:2px solid var(--surface);background:var(--surface);color:var(--text);font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.15s;}
+  .ctrl-btn:hover{border-color:var(--muted);}
+  .ctrl-btn.primary{background:linear-gradient(135deg,#ff6b6b,#ffd93d);color:#1a0a00;border:none;}
+  .size-controls{display:flex;gap:6px;}
+  .size-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--surface);background:var(--surface);color:var(--text);font-size:1.1rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .size-btn:hover{border-color:var(--muted);}
+  table{width:100%;border-collapse:collapse;font-size:var(--fs);}
+  th{padding:10px 14px;text-align:left;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);border-bottom:2px solid var(--surface);}
+  td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+  .calc-row{cursor:pointer;transition:background 0.15s;}
+  .calc-row:hover{background:rgba(255,255,255,0.06)!important;}
+  .num{color:var(--muted);font-size:0.9em;width:2.5em;text-align:center;}
+  .calcul{font-weight:700;}
+  .hidden-cell{opacity:0;transition:opacity 0.3s;}
+  .calc-row.revealed .hidden-cell{opacity:1;}
+  .calc-row[data-ok="true"] .icone::after{content:'✅';}
+  .calc-row[data-ok="false"][data-skipped="false"] .icone::after{content:'❌';}
+  .calc-row[data-skipped="true"] .icone::after{content:'⏱';}
+  .calc-row[data-ok="true"] .reponse{color:var(--green);font-weight:800;}
+  .calc-row[data-ok="false"][data-skipped="false"] .reponse{color:var(--red);font-weight:800;text-decoration:line-through;}
+  .calc-row[data-ok="false"] .correction{color:var(--green);font-weight:800;}
+  .icone,.reponse,.correction{text-align:center;width:120px;}
+  .hint{text-align:center;color:var(--muted);font-size:0.8rem;margin-top:12px;padding-top:12px;border-top:1px solid var(--surface);}
 </style>
 </head>
 <body>
-<h1>🧮 Calcul <span>Mental</span></h1>
-<div class="meta">${dateStr} — ${catNames[selCat]||''} · ${typeName} · ${lvNames[selLevel]||''}</div>
+<header>
+  <div>
+    <div class="title">🧮 Calcul Mental — Correction</div>
+    <div class="meta">${catNames[selCat]||''} · ${typeName} · ${lvNames[selLevel]||''}</div>
+  </div>
+  <div class="score-big">${scoreNum}/${den} <span style="font-size:1rem;color:var(--muted);-webkit-text-fill-color:var(--muted)">${pct}</span></div>
+  <div class="controls">
+    <div class="size-controls">
+      <button class="size-btn" onclick="changeSize(-0.15)">−</button>
+      <button class="size-btn" onclick="changeSize(0.15)">+</button>
+    </div>
+    <button class="ctrl-btn" onclick="revealAll()">👁 Tout révéler</button>
+    <button class="ctrl-btn" onclick="hideAll()">🙈 Tout masquer</button>
+  </div>
+</header>
 
-<div class="score-box">
-  <div class="score-chip"><div class="val" style="background:linear-gradient(135deg,#ff6b6b,#ffd93d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${score}/${den}</div><div class="lbl">Score</div></div>
-  <div class="score-chip"><div class="val correct">${correct}</div><div class="lbl">Correctes</div></div>
-  <div class="score-chip"><div class="val wrong">${wrong}</div><div class="lbl">Erreurs</div></div>
-  <div class="score-chip"><div class="val skip">${skip}</div><div class="lbl">Passées</div></div>
-  <div class="score-chip"><div class="val pct">${pct}</div><div class="lbl">Réussite</div></div>
-</div>
-
-<div class="section">Détail des réponses</div>
 <table>
   <thead>
     <tr>
-      <th style="width:32px">#</th>
+      <th>#</th>
       <th>Calcul</th>
-      <th style="width:40px;text-align:center">✓</th>
-      <th style="width:80px;text-align:center">Réponse</th>
-      <th style="width:90px">Correction</th>
+      <th style="text-align:center">Résultat</th>
+      <th style="text-align:center">Réponse donnée</th>
+      <th style="text-align:center">Correction</th>
     </tr>
   </thead>
-  <tbody>${rows}</tbody>
+  <tbody id="tbody">${rows}</tbody>
 </table>
+<div class="hint">👆 Cliquer sur une ligne pour révéler la réponse</div>
 
-<script>window.onload=function(){window.print();}<\/script>
+<script>
+const data=${rowsJson};
+// Fill cell content
+document.querySelectorAll('.calc-row').forEach((tr,i)=>{
+  const d=data[i];
+  tr.querySelector('.icone').textContent='';
+  tr.querySelector('.reponse').textContent=d.given;
+  tr.querySelector('.correction').textContent=(!d.ok&&!d.skipped)?('→ '+d.corr):'';
+});
+function revealRow(tr){tr.classList.toggle('revealed');}
+function revealAll(){document.querySelectorAll('.calc-row').forEach(tr=>tr.classList.add('revealed'));}
+function hideAll(){document.querySelectorAll('.calc-row').forEach(tr=>tr.classList.remove('revealed'));}
+function changeSize(delta){
+  const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||1.6;
+  const next=Math.max(0.8,Math.min(3.5,cur+delta));
+  document.documentElement.style.setProperty('--fs',next+'rem');
+}
+<\/script>
 </body>
 </html>`;
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;
-  a.target='_blank';
-  a.rel='noopener';
+  a.href=url;a.target='_blank';a.rel='noopener';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
